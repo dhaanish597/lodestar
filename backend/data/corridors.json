@@ -1,0 +1,5 @@
+{
+  "hormuz": { "bbox": [25.2732, 55.1647, 27.3713, 57.3419] },
+  "bab_el_mandeb": { "bbox": [11.5, 43.0, 13.2, 43.6], "note": "approx; ~12.5N Djibouti/Eritrea to Yemen; future work, not wired in Phase 1" },
+  "malacca": { "bbox": [1.0, 100.0, 6.0, 104.0], "note": "approx; true shape is a multi-point polygon; future work, not wired in Phase 1" }
+}
