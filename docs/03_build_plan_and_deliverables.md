@@ -18,7 +18,9 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 |---|---|---|---|
 | FastAPI skeleton + `/health` + typed Pydantic models | You | Tech | ✅ |
 | AISStream WS client + dead-reckoning + `/ws/vessels` relay | You | Tech/Innov | ✅ |
-| GDELT connector (TimelineVol, corridor bbox) | You | Innov | ✅ |
+| AIS pipeline hop-by-hop diagnostic logging (a–e) + empty-key guard | You | Tech | ✅ |
+| AIS task pinning (GC fix) + done-callback + raw-message logging + receive-loop exception hardening | You | Tech | ✅ |
+| GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ⬜ |
 | Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
@@ -33,6 +35,7 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 |---|---|---|---|
 | Next.js + deck.gl + MapLibre base | You/teammate | UX | ✅ |
 | Live vessel layer (Scatterplot + Path + Trips dead-reckoning) | You | UX/Tech | 🟨 (Scatterplot done; Path/Trips interpolation is Phase 2 polish) |
+| Frontend WS hop-e console logging (vessel stream diagnostics) | You | Tech | ✅ |
 | Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
 | Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ✅ |
 | Scenario sliders + live cascade readout | You | Business/UX | ⬜ |

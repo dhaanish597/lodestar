@@ -156,6 +156,28 @@ lodestar/
 
 ---
 
+## AIS pipeline observability (hop-by-hop logging)
+
+The AIS data path from source to map has five hops, each instrumented with diagnostic logging:
+
+| Hop | Where | Log tag | What it proves |
+|-----|-------|---------|----------------|
+| **(a)** Socket open | `aisstream.py` → `run()` | `[AIS hop-a]` | WebSocket connected to AISStream |
+| **(b)** Subscription sent | `aisstream.py` → `_consume()` | `[AIS hop-b]` | Correct payload (masked key, bbox) sent within 3s |
+| **(c)** Positions received | `aisstream.py` → `_consume()` loop | `[AIS hop-c]` | First vessel logged loudly; every 50th summarized |
+| | | `[AIS raw]` | **Every** raw message logged (type + first 200 chars) before parsing |
+| **(d)** Relay broadcast | `ws.py` → `ws_vessels()` | `[WS hop-d]` | Vessel count per broadcast to each frontend client |
+| **(e)** Frontend received | `ws.ts` → `useVesselStream()` | `[WS hop-e]` | Browser console: first message + periodic counts |
+| Task lifecycle | `main.py` → `_log_task_result()` | `[AIS-TASK]` | Fires when the AIS task exits (exception, cancel, or clean) |
+
+**To diagnose a dead pipeline:** check `docker compose logs api` for hops a–d. If hop-a never appears, the container can’t reach AISStream. If hop-b appears but `[AIS raw]` never does, the server isn’t sending anything (bad key, empty bbox, or the connection was silently dropped). If `[AIS-TASK]` logs an exception, the background task died. Open browser DevTools console for hop-e.
+
+The AIS background task is pinned to `app.state.ais_task` (preventing GC) and has a `done_callback` that logs any unhandled exception. The receive loop wraps each message in try/except so one bad message cannot kill the entire loop.
+
+The backend also logs a `[STARTUP]` line with the masked API key and corridor bbox on boot — verify this first.
+
+---
+
 ## Model assumptions & limitations (read this)
 
 Lodestar's scenario engine is a **transparent, assumption-driven what-if tool** — not a claim of predictive accuracy. Every assumption is exposed and adjustable in the UI, and enumerated in `docs/04_model_assumptions_and_constants.md`.
@@ -163,8 +185,11 @@ Lodestar's scenario engine is a **transparent, assumption-driven what-if tool** 
 Known constraints, handled explicitly:
 
 - **AIS coverage** — terrestrial receivers reach ~15–20 nm offshore; deep-ocean and "dark fleet" vessels drop out. Stale positions (>2h) are dead-reckoned and flagged `signal_lost`, never silently dropped.
+- **AIS task lifecycle** — the background task is pinned to `app.state.ais_task` (prevents GC) with a done-callback that logs any unhandled exception. The receive loop wraps each message in try/except so a single bad message cannot kill ingestion.
+- **API key guard** — if `AISSTREAM_API_KEY` is empty, the backend logs a loud `[STARTUP] ✗` error and the AIS client refuses to connect (instead of silently retrying forever).
 - **Price latency** — EIA spot prices publish weekly; intraday precision falls back to (cached) Alpha Vantage.
 - **Chokepoint throughput** — not a live API; treated as a cited config constant, not a feed.
+- **GDELT rate limits** — GDELT enforces ~1 req/5s; the connector uses a 120s TTL in-memory cache and respects `Retry-After` headers on 429 responses, serving the last good cached value while rate-limited.
 - **GDELT window** — only the most recent 90 days are queryable.
 
 ---

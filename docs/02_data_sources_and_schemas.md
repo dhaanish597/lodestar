@@ -50,7 +50,8 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
 - **Geographic narrowing:** add `bbox=25.27,55.16,27.37,57.34` for Hormuz.
 - **Noise control:** prefer a `theme` filter (e.g. `theme=CRISISLEX_CRISISLEXREC`) and/or LLM relevance filtering on returned text.
 - **Response:** `timeline[].data[]` → `{date, value}` article-volume points. We MinMax-scale this into the risk feature `X_kinetic`.
-- **Implementation note:** `backend/app/ingestion/gdelt.py` implements exactly this query (`mode=TimelineVol`, `timespan=72h`, `bbox=25.27,55.16,27.37,57.34`) and MinMax-scales the latest timeline point into `[0,1]` — confirmed matching the documented query/timespan/bbox above. Theme filtering (`theme=CRISISLEX_CRISISLEXREC`) is not yet applied — `STUB →` noise-reduction improvement, Phase 2.
+- **Rate limits:** GDELT enforces ~1 request per 5 seconds; exceeding this returns HTTP 429.
+- **Implementation note:** `backend/app/ingestion/gdelt.py` implements exactly this query (`mode=TimelineVol`, `timespan=72h`, `bbox=25.27,55.16,27.37,57.34`) and MinMax-scales the latest timeline point into `[0,1]` — confirmed matching the documented query/timespan/bbox above. Theme filtering (`theme=CRISISLEX_CRISISLEXREC`) is not yet applied — `STUB →` noise-reduction improvement, Phase 2. The connector uses a `GdeltCache` class with a 120s TTL: on a 429, it reads the `Retry-After` header, backs off, and serves the last good cached value. The `/risk/hormuz` endpoint polls frequently; the cache ensures at most 1 real GDELT request per 2 minutes.
 
 ## 4. OpenSanctions — vessel / entity screening
 - **Base:** `https://api.opensanctions.org/match/default`
