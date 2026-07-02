@@ -1,0 +1,62 @@
+# 03 — Build Plan & Deliverables (living tracker)
+
+> Update the status column as we go. Full rationale, architecture, and delegation live in the HTML build plan. Legend: ⬜ todo · 🟨 in progress · ✅ done · ✂️ cut.
+
+## Submission artifacts (the 4 things judged)
+| # | Artifact | Format | Owner | Status |
+|---|---|---|---|---|
+| 1 | Working prototype | Public GitHub + one-command run | You | ⬜ |
+| 2 | Detailed document | PDF | Teammate (writing) | ⬜ |
+| 3 | Demo video | MP4/MKV <50MB or Drive link, 3–4 min | Teammate (media) | ⬜ |
+| 4 | Architecture diagram | In doc + deck | Teammate (from SVG) | ⬜ |
+
+## The spine (must run live on stage)
+Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible sliders) → ranked executable reroute plan → on the map → signal→recommendation latency badge.
+
+## Backend
+| Task | Owner | Rubric | Status |
+|---|---|---|---|
+| FastAPI skeleton + `/health` + typed Pydantic models | You | Tech | ⬜ |
+| AISStream WS client + dead-reckoning + `/ws/vessels` relay | You | Tech/Innov | ⬜ |
+| GDELT connector (TimelineVol, corridor bbox) | You | Innov | ⬜ |
+| EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ⬜ |
+| Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
+| OpenSanctions vessel screening | You | Innov | ⬜ |
+| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | ⬜ |
+| Scenario cascade engine (5 steps, all sliders) | You | Business | ⬜ |
+| Reroute MCDM (grade_match matrix) | You | Business | ⬜ |
+| LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |
+| Chroma RAG over policy/geopolitics docs | Teammate | Innov | ⬜ |
+
+## Frontend
+| Task | Owner | Rubric | Status |
+|---|---|---|---|
+| Next.js + deck.gl + MapLibre base | You/teammate | UX | ⬜ |
+| Live vessel layer (Scatterplot + Path + Trips dead-reckoning) | You | UX/Tech | ⬜ |
+| Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
+| Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ⬜ |
+| Scenario sliders + live cascade readout | You | Business/UX | ⬜ |
+| Reroute ranked-list card (executable plan) | You | Business | ⬜ |
+| Latency badge (signal→recommendation) | You | Business | ⬜ |
+| Refinery + SPR markers | Teammate | UX | ⬜ |
+
+## Packaging
+| Task | Owner | Status |
+|---|---|---|
+| docker-compose (api, web, chroma, redis) | You | ⬜ |
+| `.env.example` + README run steps | Teammate | ⬜ |
+| Clean-machine run verification | Teammate (QA) | ⬜ |
+
+## Data (delegate-friendly)
+| Task | Owner | Status |
+|---|---|---|
+| `refineries.json`, `spr.json`, `corridors.json`, `crude_grades.json` curated + source-verified | Teammate | ⬜ |
+| RAG corpus: 10–20 public PDFs/articles (PPAC, EIA, IEA, ORF) | Teammate | ⬜ |
+
+## Cut-list (drop in this order if behind)
+1. Malacca + Bab-el-Mandeb depth (keep code path, Hormuz only) ✂️ first
+2. FRED freight feed → static stub
+3. OpenSanctions live → pre-screened static list
+4. LangGraph → keep agents but run sequential if graph is flaky
+5. Chroma RAG → cut entirely, keep facts inline
+**Never cut:** live AIS, explainable risk score, adjustable scenario, ranked reroute, latency badge.

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lodestar — Build Plan · ET AI Hackathon 2.0 / PS2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0C1B2A;          /* deep sea */
+    --ink-2:#102536;
+    --paper:#F3EFE6;        /* chart paper */
+    --paper-2:#ECE6D8;
+    --line:#0E3A4A;
+    --cyan:#13B6C4;         /* signal */
+    --amber:#E29A35;        /* signal */
+    --alert:#D9543F;        /* alert */
+    --muted:#6B7B86;
+    --rule:#cfc6b3;
+    --ok:#3E8E6E;
+    --card-ink:#0E2030;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Newsreader",Georgia,serif; font-size:18px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ---- layout ---- */
+  .shell{display:grid; grid-template-columns:288px 1fr; min-height:100vh}
+  nav.toc{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    background:var(--ink); color:#cdd9e1; padding:30px 22px 60px;
+    border-right:1px solid #08131d;
+  }
+  main{max-width:920px; padding:60px 64px 140px; margin:0}
+  @media(max-width:980px){
+    .shell{grid-template-columns:1fr}
+    nav.toc{position:fixed; z-index:50; width:280px; left:-300px; transition:left .25s ease; box-shadow:0 0 40px rgba(0,0,0,.4)}
+    nav.toc.open{left:0}
+    main{padding:78px 22px 120px}
+    .navtoggle{display:flex !important}
+  }
+  /* ---- TOC ---- */
+  .brandmark{font-family:"Space Grotesk",sans-serif; font-weight:700; letter-spacing:.22em; font-size:15px; color:#fff}
+  .brandmark .dot{color:var(--amber)}
+  .toc .ps{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.16em; color:var(--cyan); margin-top:8px; text-transform:uppercase}
+  .toc hr{border:none; border-top:1px solid #1d3243; margin:22px 0}
+  .toc a{
+    display:block; color:#9fb0bb; text-decoration:none; font-family:"Space Grotesk",sans-serif;
+    font-size:13.5px; padding:7px 10px; border-radius:6px; line-height:1.3;
+  }
+  .toc a .n{font-family:"JetBrains Mono",monospace; font-size:11px; color:#5f7484; margin-right:9px}
+  .toc a:hover{background:#16293a; color:#fff}
+  .toc a.active{background:#16293a; color:#fff}
+  .toc a.active .n{color:var(--amber)}
+  .navtoggle{
+    display:none; position:fixed; top:14px; left:14px; z-index:60;
+    background:var(--ink); color:#fff; border:none; border-radius:8px; width:44px; height:44px;
+    align-items:center; justify-content:center; cursor:pointer; font-size:20px;
+  }
+  /* ---- header ---- */
+  .ticks{height:14px; background-image:repeating-linear-gradient(90deg,var(--rule) 0 1px,transparent 1px 44px); opacity:.7; margin-bottom:26px}
+  h1.title{font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:54px; line-height:1.02; letter-spacing:-.01em; margin:0 0 6px}
+  .subtitle{font-family:"Newsreader",serif; font-style:italic; font-size:22px; color:var(--line); margin:0 0 18px; max-width:680px}
+  .metaline{font-family:"JetBrains Mono",monospace; font-size:11.5px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; display:flex; flex-wrap:wrap; gap:7px 18px; padding-bottom:24px; border-bottom:2px solid var(--ink)}
+  /* ---- sections ---- */
+  section{padding-top:54px; scroll-margin-top:20px}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.2em; color:var(--amber); text-transform:uppercase; display:flex; align-items:center; gap:12px; margin-bottom:8px}
+  .eyebrow .num{color:var(--line); font-weight:700}
+  .eyebrow::after{content:""; flex:1; height:1px; background:var(--rule)}
+  h2{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:31px; letter-spacing:-.01em; margin:0 0 14px; line-height:1.12}
+  h3{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:19px; margin:30px 0 8px}
+  p{margin:0 0 16px}
+  a.inline{color:var(--line); text-decoration:underline; text-decoration-color:var(--cyan); text-underline-offset:3px}
+  strong{font-weight:600}
+  .lead{font-size:20.5px; color:#1a2c3a}
+  /* ---- rubric chips ---- */
+  .chip{display:inline-block; font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.05em; padding:2px 8px; border-radius:20px; border:1px solid; margin:0 4px 4px 0; white-space:nowrap; vertical-align:middle}
+  .c-innov{color:#9a5a00; border-color:#e0a44d; background:#f7e9cf}
+  .c-biz{color:#1f6b52; border-color:#7bc0a4; background:#dcefe5}
+  .c-tech{color:#1d5f8c; border-color:#7eb3d6; background:#dcebf5}
+  .c-scale{color:#6a4a8c; border-color:#b39ad0; background:#ece3f5}
+  .c-ux{color:#9a3f33; border-color:#e09084; background:#f7ddd8}
+  /* ---- cards ---- */
+  .card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px; margin:18px 0}
+  .card.dark{background:var(--card-ink); color:#dbe6ec; border-color:#0a141d}
+  .card.dark h3{color:#fff}
+  .card.dark .k{color:var(--cyan)}
+  .spine{background:var(--card-ink); color:#e7eef2; border-radius:14px; padding:8px 6px; margin:20px 0; overflow:hidden}
+  .spine .row{display:flex; flex-wrap:wrap; align-items:stretch; gap:0}
+  .spine .step{flex:1; min-width:130px; padding:18px 16px; position:relative}
+  .spine .step .lbl{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.12em; color:var(--cyan); text-transform:uppercase; margin-bottom:6px}
+  .spine .step .txt{font-family:"Space Grotesk",sans-serif; font-size:14.5px; line-height:1.3; color:#fff}
+  .spine .step:not(:last-child)::after{content:"›"; position:absolute; right:-6px; top:50%; transform:translateY(-50%); color:var(--amber); font-size:22px; font-family:"Space Grotesk",sans-serif}
+  /* ---- callouts ---- */
+  .callout{border-left:4px solid var(--amber); background:var(--paper-2); padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0; font-size:16.5px}
+  .callout.danger{border-left-color:var(--alert)}
+  .callout.win{border-left-color:var(--ok)}
+  .callout .tag{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--line); display:block; margin-bottom:5px; font-weight:700}
+  /* ---- tables ---- */
+  .tbl{width:100%; border-collapse:collapse; margin:18px 0; font-size:15px; background:#fff; border:1px solid var(--rule); border-radius:10px; overflow:hidden}
+  .tbl th{background:var(--ink); color:#dbe6ec; font-family:"Space Grotesk",sans-serif; font-weight:500; text-align:left; padding:11px 14px; font-size:13px; letter-spacing:.02em}
+  .tbl td{padding:10px 14px; border-top:1px solid var(--paper-2); vertical-align:top; line-height:1.45}
+  .tbl tr:nth-child(even) td{background:#faf8f2}
+  .tbl td code, .tbl td .mono{font-family:"JetBrains Mono",monospace; font-size:12.5px}
+  .who-you{font-family:"JetBrains Mono",monospace; font-size:11px; color:#9a5a00; font-weight:700}
+  .who-team{font-family:"JetBrains Mono",monospace; font-size:11px; color:#1d5f8c; font-weight:700}
+  /* ---- code / repo ---- */
+  pre{background:var(--ink); color:#cfe6ea; font-family:"JetBrains Mono",monospace; font-size:12.5px; line-height:1.65; padding:20px 22px; border-radius:12px; overflow-x:auto; margin:18px 0}
+  pre .c{color:#6f8a96}
+  pre .h{color:var(--amber)}
+  code.ic{font-family:"JetBrains Mono",monospace; font-size:14px; background:var(--paper-2); padding:1px 6px; border-radius:5px}
+  /* ---- timeline ---- */
+  .phase{display:grid; grid-template-columns:auto 1fr; gap:18px; padding:20px 0; border-top:1px solid var(--rule)}
+  .phase:first-of-type{border-top:none}
+  .phase .marker{font-family:"JetBrains Mono",monospace; font-size:11px; color:#fff; background:var(--line); border-radius:8px; padding:8px 10px; height:fit-content; text-align:center; min-width:74px; letter-spacing:.05em}
+  .phase .marker .ph{display:block; font-size:18px; font-family:"Space Grotesk",sans-serif; font-weight:700; color:var(--amber)}
+  .phase h3{margin-top:0}
+  .phase ul{margin:6px 0 0; padding-left:18px}
+  .phase li{margin-bottom:5px; font-size:16px}
+  ul.clean{list-style:none; padding-left:0}
+  ul.clean li{padding-left:26px; position:relative; margin-bottom:9px}
+  ul.clean li::before{content:"◉"; position:absolute; left:0; top:0; color:var(--cyan); font-size:13px}
+  .checkbox li::before{content:"☐"; color:var(--line); font-size:16px; top:-1px}
+  /* ---- footer ---- */
+  footer{margin-top:70px; padding-top:24px; border-top:2px solid var(--ink); font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--muted); letter-spacing:.04em}
+  .legend{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--muted); margin:8px 0 0}
+  /* svg diagram */
+  .diagram{background:var(--card-ink); border-radius:14px; padding:20px; margin:18px 0}
+  .diagram svg{width:100%; height:auto; display:block}
+</style>
+</head>
+<body>
+<button class="navtoggle" id="navtoggle" aria-label="Toggle navigation">☰</button>
+<div class="shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <nav class="toc" id="toc">
+    <div class="brandmark">LODESTAR<span class="dot">.</span></div>
+    <div class="ps">ET AI Hackathon 2.0 · PS2 · Build Sprint</div>
+    <hr>
+    <a href="#bet"><span class="n">00</span>The bet</a>
+    <a href="#spine"><span class="n">01</span>The spine</a>
+    <a href="#scoreboard"><span class="n">02</span>Rubric scoreboard</a>
+    <a href="#arch"><span class="n">03</span>Architecture</a>
+    <a href="#repo"><span class="n">04</span>Repo structure</a>
+    <a href="#data"><span class="n">05</span>Live data sources</a>
+    <a href="#engines"><span class="n">06</span>The three engines</a>
+    <a href="#delegate"><span class="n">07</span>You vs. the team</a>
+    <a href="#timeline"><span class="n">08</span>Build timeline</a>
+    <a href="#defend"><span class="n">09</span>Defensibility playbook</a>
+    <a href="#demo"><span class="n">10</span>Demo script</a>
+    <a href="#submit"><span class="n">11</span>Submission checklist</a>
+    <a href="#risk"><span class="n">12</span>Risk register & cut-list</a>
+    <a href="#files"><span class="n">13</span>Files to add to project</a>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="ticks"></div>
+    <h1 class="title">Lodestar</h1>
+    <p class="subtitle">An anticipatory decision tool for import-dependent energy security — built to win PS2 on live data, not mockups.</p>
+    <div class="metaline">
+      <span>◇ Problem Statement 2</span>
+      <span>◇ Spine: Strait of Hormuz × India</span>
+      <span>◇ Stack: FastAPI · LangGraph · Next.js · deck.gl</span>
+      <span>◇ Status: planning → build</span>
+    </div>
+
+    <!-- 00 THE BET -->
+    <section id="bet">
+      <div class="eyebrow"><span class="num">00</span>The bet</div>
+      <h2>Why this can win, and what could lose it</h2>
+      <p class="lead">PS2 is the rare statement where the demo can run on <strong>genuinely live public data</strong> — real tankers in the Strait of Hormuz, real Brent, real news — while sounding too hard for most teams to attempt. High perceived difficulty, low actual difficulty, near-empty field. That is the arbitrage.</p>
+      <p>We don't win by building "an AI dashboard." We win by building a <strong>decision tool</strong>: it watches signals continuously, quantifies disruption probability per corridor with assumptions you can see and change, and hands a procurement team a <strong>ranked, executable rerouting plan in minutes</strong>. The judging panel likely includes Octave (Hexagon spin-off) industrial-software people whose whole worldview is "turn fragmented operational data into decisive action, geospatially." We speak their language by design.</p>
+      <div class="callout danger"><span class="tag">The one critique that kills us</span>"Looks like a speculative dashboard." We pre-empt it with three things on screen at once: <strong>live real data</strong>, an <strong>executable recommendation</strong>, and a measured <strong>signal→recommendation latency</strong>. Every number traces to a source or a labelled, adjustable assumption — never a hidden constant.</div>
+    </section>
+
+    <!-- 01 SPINE -->
+    <section id="spine">
+      <div class="eyebrow"><span class="num">01</span>The spine</div>
+      <h2>One vertical slice that must run on stage</h2>
+      <p>Build this end-to-end <em>first</em>, thin but real, before deepening any single component. If only this works on demo day, we still place well. Everything in §08 is depth hung on this spine.</p>
+      <div class="spine">
+        <div class="row">
+          <div class="step"><div class="lbl">Sense</div><div class="txt">Live AIS tankers in Hormuz bbox + GDELT kinetic news</div></div>
+          <div class="step"><div class="lbl">Score</div><div class="txt">Explainable disruption probability per corridor</div></div>
+          <div class="step"><div class="lbl">Simulate</div><div class="txt">Supply-gap → SPR days → CPI → GDP, sliders visible</div></div>
+          <div class="step"><div class="lbl">Decide</div><div class="txt">Ranked reroute plan constrained by refinery grade-fit</div></div>
+          <div class="step"><div class="lbl">Show</div><div class="txt">Geospatial map + latency badge</div></div>
+        </div>
+      </div>
+      <div class="callout win"><span class="tag">Definition of done for the slice</span>Open the app → real vessels move on the Hormuz map → corridor shows a live risk % with a per-feature breakdown → drag the "disruption %" slider → the cascade and the reroute ranking update → a latency badge reads "signal → recommendation: &lt; N s". That sequence <em>is</em> the demo.</div>
+    </section>
+
+    <!-- 02 SCOREBOARD -->
+    <section id="scoreboard">
+      <div class="eyebrow"><span class="num">02</span>Rubric scoreboard</div>
+      <h2>What each feature is actually buying us</h2>
+      <p>The rubric: Innovation 25 · Business Impact 25 · Technical Excellence 20 · Scalability 15 · UX 15. Business Impact + Innovation are <strong>half the score</strong> — we over-invest there. Every build item below is tagged with the criterion it serves.</p>
+      <table class="tbl">
+        <tr><th>Criterion</th><th>Wt</th><th>How we earn it</th></tr>
+        <tr><td><span class="chip c-innov">INNOVATION 25</span></td><td>25</td><td>Fusing AIS + GDELT + sanctions + macro elasticities into one <em>prescriptive</em> engine — no incumbent (Kpler/Vortexa/Windward) does sense→simulate→reroute in one loop. Multi-agent LangGraph orchestration, not a thin LLM wrapper.</td></tr>
+        <tr><td><span class="chip c-biz">BUSINESS IMPACT 25</span></td><td>25</td><td>Quantified cost of inaction (CPI/GDP/CAD), days-of-cover countdown, and an executable procurement plan. We answer "so what, in rupees and days?"</td></tr>
+        <tr><td><span class="chip c-tech">TECH EXCELLENCE 20</span></td><td>20</td><td>Live WebSocket AIS, typed APIs, Dockerized, dead-reckoning for signal gaps, interpretable sigmoid model with auditable weights.</td></tr>
+        <tr><td><span class="chip c-scale">SCALABILITY 15</span></td><td>15</td><td>Corridor logic is generic (Hormuz today, Bab-el-Mandeb/Malacca by config); deck.gl renders 20k+ vessels; stateless agents.</td></tr>
+        <tr><td><span class="chip c-ux">USER EXPERIENCE 15</span></td><td>15</td><td>Command-deck map, one-glance risk, sliders that make assumptions tangible, recommendation you can read and act on.</td></tr>
+      </table>
+    </section>
+
+    <!-- 03 ARCH -->
+    <section id="arch">
+      <div class="eyebrow"><span class="num">03</span>Architecture</div>
+      <h2>How the pieces fit</h2>
+      <p>A multi-agent backend orchestrated with LangGraph turns asynchronous feeds into one decision payload, streamed to a WebGL geospatial frontend. Decoupled, typed, and Dockerized so it runs with one command on demo day.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+          <defs>
+            <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#E29A35"/></marker>
+            <style>
+              .box{fill:#14283a; stroke:#284b63; stroke-width:1.2; rx:8}
+              .agent{fill:#15303a; stroke:#13B6C4; stroke-width:1.4}
+              .lbl{fill:#cfe6ea; font-size:11px}
+              .lblw{fill:#fff; font-size:11.5px; font-weight:700}
+              .cap{fill:#7d96a3; font-size:9.5px}
+              .flow{stroke:#E29A35; stroke-width:1.6; fill:none; marker-end:url(#arr)}
+              .cyan{fill:#13B6C4; font-size:9.5px}
+            </style>
+          </defs>
+          <!-- sources column -->
+          <text x="20" y="24" class="cyan">LIVE SOURCES</text>
+          <g>
+            <rect x="20" y="34" width="150" height="26" class="box" rx="6"/><text x="30" y="51" class="lbl">AISStream · WebSocket</text>
+            <rect x="20" y="66" width="150" height="26" class="box" rx="6"/><text x="30" y="83" class="lbl">GDELT 2.0 · news</text>
+            <rect x="20" y="98" width="150" height="26" class="box" rx="6"/><text x="30" y="115" class="lbl">EIA / AlphaVantage</text>
+            <rect x="20" y="130" width="150" height="26" class="box" rx="6"/><text x="30" y="147" class="lbl">OpenSanctions</text>
+            <rect x="20" y="162" width="150" height="26" class="box" rx="6"/><text x="30" y="179" class="lbl">Open-Meteo · FRED</text>
+          </g>
+          <!-- agents -->
+          <text x="250" y="24" class="cyan">LANGGRAPH AGENTS</text>
+          <rect x="250" y="34" width="200" height="40" class="agent" rx="8"/><text x="262" y="52" class="lblw">Market Intelligence</text><text x="262" y="66" class="cap">price spikes · volatility class</text>
+          <rect x="250" y="86" width="200" height="40" class="agent" rx="8"/><text x="262" y="104" class="lblw">Logistics &amp; Maritime</text><text x="262" y="118" class="cap">AIS density · sea state · sanctions</text>
+          <rect x="250" y="138" width="200" height="40" class="agent" rx="8"/><text x="262" y="156" class="lblw">Macro Strategist</text><text x="262" y="170" class="cap">supply gap · SPR · CPI · GDP</text>
+          <rect x="250" y="190" width="200" height="40" class="agent" rx="8"/><text x="262" y="208" class="lblw">Executive Orchestrator</text><text x="262" y="222" class="cap">synthesize → ranked reroute</text>
+          <!-- engines -->
+          <text x="510" y="24" class="cyan">DETERMINISTIC ENGINES</text>
+          <rect x="510" y="34" width="230" height="34" class="box" rx="6"/><text x="522" y="55" class="lbl">Risk = sigmoid(β0+Σwᵢxᵢ)</text>
+          <rect x="510" y="80" width="230" height="34" class="box" rx="6"/><text x="522" y="101" class="lbl">Scenario cascade (5 steps)</text>
+          <rect x="510" y="126" width="230" height="34" class="box" rx="6"/><text x="522" y="147" class="lbl">Reroute MCDM + grade-fit</text>
+          <rect x="510" y="172" width="230" height="34" class="box" rx="6"/><text x="522" y="193" class="lbl">Chroma RAG (policy docs)</text>
+          <!-- API + FE -->
+          <rect x="250" y="270" width="200" height="40" class="box" rx="8" stroke="#E29A35"/><text x="262" y="288" class="lblw">FastAPI + /ws relay</text><text x="262" y="302" class="cap">typed payloads · WebSocket</text>
+          <rect x="250" y="338" width="490" height="58" class="box" rx="8" stroke="#13B6C4"/>
+          <text x="262" y="360" class="lblw">Next.js · deck.gl · MapLibre</text>
+          <text x="262" y="376" class="cap">vessels (Scatterplot/Path/Trips) · risk polygons · sliders</text>
+          <text x="262" y="390" class="cap">reroute card · signal→recommendation latency badge</text>
+          <!-- flows -->
+          <path class="flow" d="M170 47 H248"/>
+          <path class="flow" d="M170 79 H248"/>
+          <path class="flow" d="M170 111 H248"/>
+          <path class="flow" d="M170 145 H248"/>
+          <path class="flow" d="M170 175 C 210 175, 220 79, 248 79"/>
+          <path class="flow" d="M450 54 C 480 54, 480 51, 508 51"/>
+          <path class="flow" d="M450 158 C 480 158, 480 97, 508 97"/>
+          <path class="flow" d="M450 210 C 480 210, 480 143, 508 143"/>
+          <path class="flow" d="M350 230 V 268"/>
+          <path class="flow" d="M350 310 V 336"/>
+        </svg>
+      </div>
+      <p class="legend">Flow: feeds → specialized agents (parallel) → deterministic engines do the math (agents reason about it, don't replace it) → orchestrator synthesizes → FastAPI streams a typed payload → deck.gl renders. The engines are deterministic on purpose: policymakers need auditability, not a black box.</p>
+    </section>
+
+    <!-- 04 REPO -->
+    <section id="repo">
+      <div class="eyebrow"><span class="num">04</span>Repo structure</div>
+      <h2>Clean structure reads as competence</h2>
+      <p>Last edition's jury penalized "thin LLM wrappers." A legible monorepo, typed contracts, and a one-command run are themselves <span class="chip c-tech">TECH 20</span> points.</p>
+<pre><span class="c"># lodestar/</span>
+backend/
+  app/
+    main.py              <span class="c"># FastAPI app, /health, mounts /ws</span>
+    config.py            <span class="c"># env keys, corridor constants</span>
+    models.py            <span class="c"># Pydantic: Vessel, RiskScore, Scenario, RerouteOption</span>
+    ingestion/
+      aisstream.py       <span class="h"># async WS client + dead-reckoning</span>
+      gdelt.py  eia.py  alphavantage.py  openmeteo.py  fred.py  sanctions.py
+    engine/
+      risk.py            <span class="h"># sigmoid weighted model + per-feature breakdown</span>
+      scenario.py        <span class="h"># 5-step macro cascade, all assumptions as params</span>
+      reroute.py         <span class="h"># MCDM + grade_match matrix</span>
+    agents/
+      graph.py           <span class="h"># LangGraph wiring (4 nodes)</span>
+      market.py logistics.py macro.py orchestrator.py
+    rag/  store.py ingest.py
+    api/  routes.py ws.py
+  data/  refineries.json spr.json corridors.json crude_grades.json
+  tests/ test_risk.py test_scenario.py test_reroute.py
+  requirements.txt  Dockerfile  .env.example
+frontend/
+  app/  page.tsx layout.tsx
+  components/  MapDeck.tsx RiskPanel.tsx ScenarioSliders.tsx RerouteCard.tsx LatencyBadge.tsx
+  lib/  ws.ts deckLayers.ts
+  package.json  Dockerfile
+docker-compose.yml      <span class="c"># api · web · chroma · redis</span>
+README.md               <span class="c"># one-command run + screenshots + assumptions</span></pre>
+    </section>
+
+    <!-- 05 DATA -->
+    <section id="data">
+      <div class="eyebrow"><span class="num">05</span>Live data sources</div>
+      <h2>All free-tier, all reachable</h2>
+      <p>Full schemas, auth, gotchas and the feed→feature map are in <code class="ic">02_data_sources_and_schemas.md</code>. The essentials:</p>
+      <table class="tbl">
+        <tr><th>Source</th><th>Gives us</th><th>Auth / limit</th><th>Watch out</th></tr>
+        <tr><td><strong>AISStream</strong></td><td class="mono">live tanker positions (WS)</td><td>key in 1st msg · 50 MMSI filter</td><td>send subscribe &lt;3s; ~15–20nm coverage; dead-reckon if stale &gt;2h</td></tr>
+        <tr><td><strong>GDELT 2.0</strong></td><td class="mono">kinetic news volume</td><td>no key · last 90 days</td><td>noisy keywords → use theme + bbox</td></tr>
+        <tr><td><strong>EIA v2</strong></td><td class="mono">Brent/WTI daily, fundamentals</td><td>key · unlimited</td><td>~1 week batch lag (baseline only)</td></tr>
+        <tr><td><strong>Alpha Vantage</strong></td><td class="mono">intraday Brent/WTI</td><td>key · 25 req/day</td><td>must cache hourly/daily</td></tr>
+        <tr><td><strong>OpenSanctions</strong></td><td class="mono">vessel/entity flags</td><td>ApiKey header · free</td><td>pass IMO/MMSI for exact match</td></tr>
+        <tr><td><strong>Open-Meteo</strong></td><td class="mono">wave height / sea state</td><td>no key · 10k/day</td><td>metric units by default</td></tr>
+        <tr><td><strong>FRED</strong></td><td class="mono">Baltic tanker indices</td><td>key · free</td><td>stub if series unavailable</td></tr>
+        <tr><td><strong>Portcast/Safecube</strong></td><td class="mono">port congestion</td><td>paywalled</td><td><span class="who-you">STUB</span> historical averages</td></tr>
+      </table>
+      <div class="callout"><span class="tag">Build order for connectors</span>AISStream first (it's the showpiece <em>and</em> the riskiest), then GDELT (no key, instant signal), then prices. Sanctions/weather/freight are additive — wire them after the spine runs.</div>
+    </section>
+
+    <!-- 06 ENGINES -->
+    <section id="engines">
+      <div class="eyebrow"><span class="num">06</span>The three engines</div>
+      <h2>Where the defensibility lives</h2>
+      <p>Full math + every assumption value is in <code class="ic">04_model_assumptions_and_constants.md</code>. The design principle across all three: <strong>deterministic, interpretable, adjustable</strong>. Agents reason <em>about</em> these outputs; they don't fabricate them.</p>
+
+      <h3>1 · Risk score — explainable, not a black box <span class="chip c-innov">INNOVATION</span><span class="chip c-tech">TECH</span></h3>
+      <p>A sigmoid over a weighted sum of normalized features: <code class="ic">P = sigmoid(β0 + Σ wᵢxᵢ)</code>, with <code class="ic">β0 = −3.0</code> (≈4.7% resting probability). Features: kinetic news (0.40), AIS density anomaly (0.25), sanctions ratio (0.15), sea state (0.10), freight volatility (0.10). The UI shows each <code class="ic">wᵢxᵢ</code> as a stacked bar — that visible decomposition is our biggest "is it real" win.</p>
+
+      <h3>2 · Scenario cascade — the cost of inaction <span class="chip c-biz">BUSINESS IMPACT</span></h3>
+      <p>Five deterministic steps: supply gap → refinery run-rate drop → SPR/buffer drawdown (days-of-cover countdown) → CPI delta (RBI rule: +10% crude ⇒ +0.3–0.4pp CPI) → GDP drag (~15bps) and CAD widening. Every assumption — Hormuz share, disruption %, substitution rate, SPR fill %, CPI sensitivity — is a labelled slider. The brief explicitly rewards explicit, testable assumptions, so we turn the one hard-to-validate piece into a credibility feature.</p>
+
+      <h3>3 · Reroute MCDM — executable, grade-aware <span class="chip c-biz">BUSINESS IMPACT</span><span class="chip c-innov">INNOVATION</span></h3>
+      <p>Ranks alternative crude sources by landed cost + voyage time + <strong>grade match</strong> − congestion. The grade-match matrix is the centrepiece: a cheap heavy-sour Venezuelan Merey cargo scores 0.0 for a simple PSU refinery that physically can't process it, and routes to RIL Jamnagar's coking units instead. That refinery-metallurgy constraint is why we beat a generic "cheapest barrel" recommender.</p>
+    </section>
+
+    <!-- 07 DELEGATE -->
+    <section id="delegate">
+      <div class="eyebrow"><span class="num">07</span>You vs. the team</div>
+      <h2>What to own, what to hand off</h2>
+      <p>You're doing most of it. Own the <strong>spine</strong> — the coupled core where one mind moving fast beats coordination overhead. Hand off the <strong>parallelizable, low-coupling</strong> work, especially anything that's a lot of hours but doesn't touch the data contract. <span class="who-you">YOU</span> = keep · <span class="who-team">TEAM</span> = delegate.</p>
+      <table class="tbl">
+        <tr><th>Workstream</th><th>Owner</th><th>Why</th></tr>
+        <tr><td>LangGraph orchestration + 3 engines (risk/scenario/reroute)</td><td><span class="who-you">YOU</span></td><td>The spine. Highest coupling, highest score weight. Don't split it.</td></tr>
+        <tr><td>AISStream WS client + dead-reckoning + /ws relay</td><td><span class="who-you">YOU</span></td><td>Trickiest live piece; the demo's beating heart.</td></tr>
+        <tr><td>FastAPI backbone + typed payload contract</td><td><span class="who-you">YOU</span></td><td>Everyone else builds against this; you define it once.</td></tr>
+        <tr><td>Map data layers (vessel/risk/reroute on deck.gl)</td><td><span class="who-you">YOU</span> defines contract · <span class="who-team">TEAM</span> styles</td><td>You own the data shape; a teammate can own component styling/polish.</td></tr>
+        <tr><td>Frontend UI polish, panels, responsive, latency badge styling</td><td><span class="who-team">TEAM</span></td><td>Low coupling once the payload is fixed. Big hours, parallelizable.</td></tr>
+        <tr><td>Submission PDF + deck + 3–4 min demo video</td><td><span class="who-team">TEAM</span></td><td><strong>Best delegation target.</strong> Heavy, zero code coupling, judged independently.</td></tr>
+        <tr><td>Architecture diagram (polish from the SVG above)</td><td><span class="who-team">TEAM</span></td><td>Self-contained; reuse §03.</td></tr>
+        <tr><td>Static reference data (refineries/SPR/crude/corridors JSON) + source-verify</td><td><span class="who-team">TEAM</span></td><td>Research-heavy, isolated files. Numbers must trace to PPAC/EIA/IEA.</td></tr>
+        <tr><td>RAG corpus: gather 10–20 public policy/geopolitics PDFs</td><td><span class="who-team">TEAM</span></td><td>Collection is delegable; you wire Chroma.</td></tr>
+        <tr><td>Open-Meteo + FRED connectors (additive feeds)</td><td><span class="who-team">TEAM</span></td><td>Self-contained, well-specified, no shared state.</td></tr>
+        <tr><td>QA: clean-machine docker run, README steps, smoke tests</td><td><span class="who-team">TEAM</span></td><td>Catches the "works on my laptop" failure that sinks live demos.</td></tr>
+      </table>
+      <div class="callout"><span class="tag">If you're solo</span>Drop everything except the spine + a Hormuz-only map + the three engines + the demo video. The cut-list in §12 is ordered for exactly this.</div>
+    </section>
+
+    <!-- 08 TIMELINE -->
+    <section id="timeline">
+      <div class="eyebrow"><span class="num">08</span>Build timeline</div>
+      <h2>Vertical slices, in order</h2>
+      <p>Phases, not calendar days — compress or stretch to your sprint length. The rule: <strong>nothing in a later phase starts until the spine from Phase 1 renders something real.</strong></p>
+
+      <div class="phase">
+        <div class="marker"><span class="ph">P1</span>SPINE</div>
+        <div>
+          <h3>Thin end-to-end on real data</h3>
+          <ul>
+            <li>FastAPI skeleton + typed payload models + <code class="ic">/health</code>.</li>
+            <li>AISStream connector → relay vessels over <code class="ic">/ws/vessels</code>.</li>
+            <li>Next.js + deck.gl + MapLibre; render live vessels in the Hormuz bbox.</li>
+            <li>GDELT connector + a <em>minimal</em> risk score (kinetic + density only).</li>
+            <li>Hard-coded scenario + reroute output, just to prove the pipe.</li>
+          </ul>
+          <p class="legend">Exit test: real tankers move on screen and a corridor shows a live %.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="marker"><span class="ph">P2</span>ENGINES</div>
+        <div>
+          <h3>Make the math real and visible</h3>
+          <ul>
+            <li>Full risk model with all 5 features + per-feature stacked-bar breakdown. <span class="chip c-innov">INNOV</span></li>
+            <li>Scenario cascade, 5 steps, every assumption wired to a slider. <span class="chip c-biz">BIZ</span></li>
+            <li>Reroute MCDM + grade_match matrix from <code class="ic">crude_grades.json</code>. <span class="chip c-biz">BIZ</span></li>
+            <li>Price connectors (EIA baseline + Alpha Vantage cached intraday).</li>
+          </ul>
+          <p class="legend">Exit test: dragging "disruption %" changes the cascade and re-ranks reroutes.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="marker"><span class="ph">P3</span>AGENTS</div>
+        <div>
+          <h3>Real orchestration, not a wrapper</h3>
+          <ul>
+            <li>LangGraph graph: Market · Logistics · Macro · Orchestrator nodes. <span class="chip c-tech">TECH</span></li>
+            <li>Agents call the deterministic engines and narrate/justify outputs.</li>
+            <li>OpenSanctions vessel screening into the density/sanctions features. <span class="chip c-innov">INNOV</span></li>
+            <li>Chroma RAG so the orchestrator can cite policy context. <span class="chip c-innov">INNOV</span></li>
+          </ul>
+          <p class="legend">Fallback: if the graph is flaky, run nodes sequentially — same outputs.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="marker"><span class="ph">P4</span>POLISH</div>
+        <div>
+          <h3>Make it land</h3>
+          <ul>
+            <li>Latency badge: timestamp signal arrival → recommendation emit. <span class="chip c-biz">BIZ</span></li>
+            <li>Map polish: risk polygons, refinery/SPR markers, dead-reckoning trails. <span class="chip c-ux">UX</span></li>
+            <li>Open-Meteo + FRED feeds in; corridor config for Bab-el-Mandeb/Malacca. <span class="chip c-scale">SCALE</span></li>
+            <li>docker-compose one-command run + README + screenshots.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="marker"><span class="ph">P5</span>SHIP</div>
+        <div>
+          <h3>The four artifacts</h3>
+          <ul>
+            <li>Record + edit the 3–4 min demo video (script in §10). <span class="chip c-ux">UX</span></li>
+            <li>Write the submission PDF (narrative + architecture + assumptions table).</li>
+            <li>Final architecture diagram from §03 SVG.</li>
+            <li>Public GitHub: tidy README, remove keys, tag a release.</li>
+            <li>Clean-machine run test by QA teammate.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 DEFEND -->
+    <section id="defend">
+      <div class="eyebrow"><span class="num">09</span>Defensibility playbook</div>
+      <h2>Answers ready before they ask</h2>
+      <p>Assume an Octave expert who builds mission-critical software interrogates every claim. Rehearse these.</p>
+      <table class="tbl">
+        <tr><th>If they ask…</th><th>You answer</th></tr>
+        <tr><td>"Is this data real or faked?"</td><td>Live AISStream WebSocket — point at a vessel, read its MMSI, cross-check on any public AIS site. GDELT and Brent are live too.</td></tr>
+        <tr><td>"How did you validate the model?"</td><td>It's interpretable by design — a sigmoid over auditable weights, not a black box. Here's the per-feature contribution on screen, and the resting probability is calibrated to ~4.7%.</td></tr>
+        <tr><td>"Aren't your economics made up?"</td><td>Every assumption is a labelled slider sourced to RBI/ICRA heuristics and PPAC data. We don't claim predictive accuracy; we claim a transparent, testable what-if engine — which the brief explicitly rewards.</td></tr>
+        <tr><td>"Why would a refiner trust the reroute?"</td><td>Because it respects refinery metallurgy — API gravity and sulfur grade-fit — not just price. A heavy-sour cargo won't be recommended to a refinery that can't process it.</td></tr>
+        <tr><td>"How is this different from Kpler/Vortexa?"</td><td>They're descriptive — where oil is. We're prescriptive — sense → simulate macro impact → output an executable plan, modeled for India's specific constraints. Nobody closes that loop.</td></tr>
+        <tr><td>"Does it scale?"</td><td>Corridors are config; deck.gl handles 20k+ vessels; agents are stateless. Hormuz is the demo depth; breadth is a config change.</td></tr>
+      </table>
+    </section>
+
+    <!-- 10 DEMO -->
+    <section id="demo">
+      <div class="eyebrow"><span class="num">10</span>Demo script</div>
+      <h2>3–4 minutes, no dead air</h2>
+      <ul class="clean">
+        <li><strong>0:00–0:25 — The stake.</strong> India imports ~90% of its crude; ~45–55% transits one strait; the SPR holds ~9.5 days. Traditional planning can't model a sustained Hormuz shock in real time. <span class="chip c-biz">BIZ</span></li>
+        <li><strong>0:25–1:05 — Live sensing.</strong> Show real tankers moving in Hormuz. "This is live AIS, right now." Point to the corridor risk % and the per-feature breakdown — kinetic news, vessel density, sanctions. <span class="chip c-innov">INNOV</span></li>
+        <li><strong>1:05–2:00 — Simulate the shock.</strong> Drag "disruption %" to 30% (the Q1-2026 figure). Watch days-of-cover fall, CPI and GDP move. "Every assumption here is visible and adjustable — sourced to RBI and PPAC." <span class="chip c-biz">BIZ</span></li>
+        <li><strong>2:00–2:50 — The decision.</strong> The reroute panel ranks alternatives. Show why Urals→Jamnagar tops it and why Merey is filtered out for a PSU refinery. "This is an executable plan, grade-aware." <span class="chip c-innov">INNOV</span></li>
+        <li><strong>2:50–3:20 — The proof.</strong> The latency badge: signal → recommendation in seconds, not weeks. "McKinsey found economies without automated rerouting took ~47 days longer to stabilize." <span class="chip c-tech">TECH</span></li>
+        <li><strong>3:20–3:40 — Close.</strong> "Lodestar turns fragmented signals into decisive, anticipatory action across a critical supply chain." (Octave's own language — deliberate.)</li>
+      </ul>
+      <div class="callout danger"><span class="tag">Video constraints</span>MP4/MKV under 50MB, else a Google Drive link. Screen-record the live app; don't narrate over slides for the demo portion — judges want to see it run.</div>
+    </section>
+
+    <!-- 11 SUBMIT -->
+    <section id="submit">
+      <div class="eyebrow"><span class="num">11</span>Submission checklist</div>
+      <h2>The four artifacts</h2>
+      <ul class="clean checkbox">
+        <li><strong>Working prototype</strong> — public GitHub URL, one-command <code class="ic">docker compose up</code>, README with run steps + screenshots, <strong>no keys committed</strong> (<code class="ic">.env.example</code> only).</li>
+        <li><strong>Detailed document (PDF)</strong> — problem, architecture (the diagram), the three engines, the assumptions table, differentiation vs incumbents, scalability.</li>
+        <li><strong>Demo video</strong> — 3–4 min, MP4/MKV &lt;50MB or Drive link, follows the §10 script.</li>
+        <li><strong>Problem statement stated</strong> — PS2, explicitly, in the submission form.</li>
+      </ul>
+      <div class="callout win"><span class="tag">Pre-flight, 30 min before deadline</span>Clone the repo fresh on a clean machine and run it. If it doesn't come up first try, that's the bug to fix — not a new feature.</div>
+    </section>
+
+    <!-- 12 RISK -->
+    <section id="risk">
+      <div class="eyebrow"><span class="num">12</span>Risk register &amp; cut-list</div>
+      <h2>What breaks, and what to drop</h2>
+      <table class="tbl">
+        <tr><th>Risk</th><th>Mitigation</th></tr>
+        <tr><td>AIS feed quiet / few vessels in bbox at demo time</td><td>Cache a recent live window to replay; widen bbox slightly; pre-record a backup clip of it live.</td></tr>
+        <tr><td>Alpha Vantage 25 req/day exhausted</td><td>Hard caching layer; fall back to EIA baseline price; never call on page load.</td></tr>
+        <tr><td>LangGraph instability under time pressure</td><td>Engines are standalone; run agents sequentially if the graph misbehaves — identical outputs.</td></tr>
+        <tr><td>Live demo network failure</td><td>Recorded backup video ready; local cached dataset toggle.</td></tr>
+        <tr><td>Over-scoping to many corridors</td><td>Hormuz depth only; others are a config row labelled "future work."</td></tr>
+      </table>
+      <h3>Cut-list — drop in this order if behind</h3>
+      <ul class="clean">
+        <li>Malacca + Bab-el-Mandeb depth (keep the code path, Hormuz only).</li>
+        <li>FRED freight feed → static stub.</li>
+        <li>OpenSanctions live → pre-screened static list.</li>
+        <li>LangGraph graph → sequential agent calls.</li>
+        <li>Chroma RAG → cut entirely; keep facts inline.</li>
+      </ul>
+      <div class="callout danger"><span class="tag">Never cut</span>Live AIS · explainable risk score · adjustable scenario · ranked grade-aware reroute · latency badge. That set <em>is</em> the product.</div>
+    </section>
+
+    <!-- 13 FILES -->
+    <section id="files">
+      <div class="eyebrow"><span class="num">13</span>Files to add to project</div>
+      <h2>Drop these into project knowledge</h2>
+      <p>I generated three companion files alongside this plan. They make the build self-documenting and feed the "every number traces to a source" defensibility story.</p>
+      <table class="tbl">
+        <tr><th>File</th><th>What it is</th><th>Why it matters</th></tr>
+        <tr><td><code class="ic">02_data_sources_and_schemas.md</code></td><td>Every API: endpoint, auth, limits, schema, gotchas, env keys, feed→feature map.</td><td>Turns the dossier into copy-paste build tasks; one source of truth for connectors.</td></tr>
+        <tr><td><code class="ic">04_model_assumptions_and_constants.md</code></td><td>Risk weights, the 5-step cascade math, MCDM weights, crude-grade matrix, refinery/SPR coordinates.</td><td>The defensibility artifact — show it (or its UI mirror) when the jury asks "is this real?"</td></tr>
+        <tr><td><code class="ic">03_build_plan_and_deliverables.md</code></td><td>Living tracker: tasks × owner × rubric × status, plus the cut-list.</td><td>Keeps "built vs pending" honest as the sprint moves (your project instructions ask for exactly this).</td></tr>
+      </table>
+      <p>Then keep your existing <code class="ic">PROJECT_INSTRUCTIONS.md</code> and <code class="ic">01_brief_and_strategy.md</code> — together with these three and the dossier, the project knowledge is complete.</p>
+      <footer>
+        LODESTAR · Build plan v1 · Spine: Strait of Hormuz × India · Real data over mocks · Every number traces to a source or a labelled assumption.
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+  // mobile nav
+  const toggle = document.getElementById('navtoggle');
+  const toc = document.getElementById('toc');
+  toggle.addEventListener('click', () => toc.classList.toggle('open'));
+  toc.querySelectorAll('a').forEach(a => a.addEventListener('click', () => toc.classList.remove('open')));
+
+  // scroll-spy
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const link = map.get(e.target.id);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+  document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
