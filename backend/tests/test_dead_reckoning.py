@@ -37,3 +37,19 @@ def test_stale_but_stationary_vessel_does_not_move():
     assert out.signal_lost is True
     assert out.lat == v.lat
     assert out.lon == v.lon
+
+
+def test_stale_vessel_with_no_heading_data_does_not_move():
+    """Vessel with no heading data (true_heading=None, cog=None) should not be extrapolated.
+
+    Even though sog > 0, the lack of heading prevents dead reckoning.
+    The position must remain frozen to avoid nonsensical extrapolation.
+    """
+    ts = datetime.now(timezone.utc) - timedelta(minutes=181)
+    v = Vessel(mmsi=1, lat=26.0, lon=56.0, sog=10.0, true_heading=None, cog=None, timestamp=ts)
+    now = datetime.now(timezone.utc)
+    out = apply_dead_reckoning(v, now)
+    assert out.signal_lost is True
+    assert out.extrapolated is True
+    assert out.lat == v.lat
+    assert out.lon == v.lon
