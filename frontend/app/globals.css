@@ -12,3 +12,18 @@ body,
   color: #e6e6e6;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
+.panel {
+  background: #141a24;
+  border: 1px solid #232b3a;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.panel h2 {
+  font-size: 15px;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  opacity: 0.9;
+}
