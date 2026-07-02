@@ -55,7 +55,7 @@ The full architecture diagram is in `docs/` and the submission deck.
 | Agent orchestration | LangGraph (Market · Logistics · Macro · Orchestrator) |
 | RAG | Chroma over public policy/geopolitics documents |
 | Frontend | Next.js · deck.gl · MapLibre (free tiles, **no Mapbox token**) · Recharts |
-| Packaging | Docker · docker-compose (api · web · chroma · redis) |
+| Packaging | Docker · docker-compose (api · web now; chroma · redis land with Phase 2/3 RAG + caching) |
 
 ---
 
@@ -90,7 +90,7 @@ All constants, weights, and assumptions live in `docs/04_model_assumptions_and_c
 ### Prerequisites
 
 - Docker + Docker Compose
-- API keys for AISStream, EIA, Alpha Vantage, OpenSanctions, and FRED (all free-tier)
+- An AISStream API key (free-tier) — this is the only key Phase 1 actually calls. GDELT needs no key. EIA, Alpha Vantage, OpenSanctions, and FRED keys are accepted in `.env` but their connectors are Phase 2 work not yet wired; the app runs fully without them (those risk features are `STUB → 0.0`).
 
 ### 1. Configure environment
 
@@ -136,21 +136,21 @@ lodestar/
       main.py            # FastAPI app, /health, mounts /ws
       config.py          # env keys, corridor constants
       models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption
-      ingestion/         # aisstream, gdelt, eia, alphavantage, openmeteo, fred, sanctions
-      engine/            # risk.py, scenario.py, reroute.py
-      agents/            # graph.py + market/logistics/macro/orchestrator
-      rag/               # store.py, ingest.py
+      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); eia, alphavantage, openmeteo, fred, sanctions land with Phase 2
+      engine/            # risk.py (Phase 1); scenario.py, reroute.py land with Phase 2
+      agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
+      rag/               # Phase 3: store.py, ingest.py (not yet present)
       api/               # routes.py, ws.py
-    data/                # refineries.json, spr.json, corridors.json, crude_grades.json
-    tests/               # test_risk.py, test_scenario.py, test_reroute.py
-    requirements.txt  Dockerfile  .env.example
+    data/                # corridors.json (Phase 1); refineries.json, spr.json, crude_grades.json land with Phase 2
+    tests/               # conftest.py + test_*.py (Phase 1: health, models, aisstream, dead_reckoning, density, gdelt, risk, routes, ws_vessels)
+    requirements.txt  Dockerfile  .dockerignore  .env.example  pytest.ini
   frontend/
     app/                 # page.tsx, layout.tsx
-    components/          # MapDeck, RiskPanel, ScenarioSliders, RerouteCard, LatencyBadge
-    lib/                 # ws.ts, deckLayers.ts
-    package.json  Dockerfile
+    components/          # MapDeck, RiskPanel, ScenarioCard, RerouteCard (Phase 1: hardcoded scenario/reroute; ScenarioSliders/LatencyBadge are Phase 2/3)
+    lib/                 # types.ts, ws.ts
+    package.json  Dockerfile  .dockerignore
   docs/                  # 01 strategy · 02 data sources · 03 build plan · 04 assumptions
-  docker-compose.yml     # api · web · chroma · redis
+  docker-compose.yml     # api · web (Phase 1); chroma · redis land with Phase 2/3
   README.md
 ```
 

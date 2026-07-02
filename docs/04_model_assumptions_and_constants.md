@@ -22,6 +22,8 @@ P(c,t) = sigmoid( β0 + Σ wi · Xi )
 | `X_freight` (BCTI) | **0.10** | Systemic tonnage-stress proxy. |
 
 - **Explainability requirement:** the UI must show the per-feature contribution `wi·Xi` as a stacked bar, not just the final %. This is the single biggest "is it real" credibility win.
+- **Phase 1 implementation status:** `X_kinetic` and `X_density` are live; `X_sanctions`, `X_weather`, `X_freight` are `STUB → 0.0` pending Phase 2 connectors (OpenSanctions, Open-Meteo, FRED respectively). See `backend/app/engine/risk.py`.
+- **`X_density` substitution:** Phase 1 computes `X_density` from a short in-memory rolling window (`DensityTracker`, `backend/app/ingestion/density.py`) rather than the 30-day MA baseline documented in `docs/02_data_sources_and_schemas.md` §10 — a live demo can't accumulate 30 days of history. `ASSUMPTION`, revisit if a persistent store is added.
 
 ## B. Macroeconomic Cascade (supply gap → GDP)
 All steps are deterministic and assumption-driven. Each assumption is a **labelled, adjustable slider** in the Scenario panel.

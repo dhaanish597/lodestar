@@ -5,10 +5,11 @@ from collections import deque
 class DensityTracker:
     """Rolling-window vessel-count anomaly detector.
 
-    ASSUMPTION -> docs/04_model_assumptions_and_constants.md specifies a 30-day
-    moving average baseline for X_density; a live demo cannot accumulate 30 days
-    of history. This substitutes a short in-memory rolling window (default 20
-    samples) as a calibrated stand-in, documented here and in docs/04.
+    ASSUMPTION -> docs/02_data_sources_and_schemas.md (§10 feed->feature map)
+    specifies a 30-day moving average baseline for X_density; a live demo
+    cannot accumulate 30 days of history. This substitutes a short in-memory
+    rolling window (default 20 samples) as a calibrated stand-in, documented
+    here, in docs/02, and in docs/04_model_assumptions_and_constants.md §A.
 
     STUB -> AISStream PositionReport carries no vessel-type field, so this counts
     all AIS contacts in the bbox, not tankers specifically. Real tanker filtering

@@ -16,13 +16,13 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 ## Backend
 | Task | Owner | Rubric | Status |
 |---|---|---|---|
-| FastAPI skeleton + `/health` + typed Pydantic models | You | Tech | ⬜ |
-| AISStream WS client + dead-reckoning + `/ws/vessels` relay | You | Tech/Innov | ⬜ |
-| GDELT connector (TimelineVol, corridor bbox) | You | Innov | ⬜ |
+| FastAPI skeleton + `/health` + typed Pydantic models | You | Tech | ✅ |
+| AISStream WS client + dead-reckoning + `/ws/vessels` relay | You | Tech/Innov | ✅ |
+| GDELT connector (TimelineVol, corridor bbox) | You | Innov | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ⬜ |
 | Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
-| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | ⬜ |
+| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic + density live, sanctions/weather/freight stubbed at 0 pending Phase 2) |
 | Scenario cascade engine (5 steps, all sliders) | You | Business | ⬜ |
 | Reroute MCDM (grade_match matrix) | You | Business | ⬜ |
 | LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |
@@ -31,19 +31,19 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 ## Frontend
 | Task | Owner | Rubric | Status |
 |---|---|---|---|
-| Next.js + deck.gl + MapLibre base | You/teammate | UX | ⬜ |
-| Live vessel layer (Scatterplot + Path + Trips dead-reckoning) | You | UX/Tech | ⬜ |
+| Next.js + deck.gl + MapLibre base | You/teammate | UX | ✅ |
+| Live vessel layer (Scatterplot + Path + Trips dead-reckoning) | You | UX/Tech | 🟨 (Scatterplot done; Path/Trips interpolation is Phase 2 polish) |
 | Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
-| Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ⬜ |
+| Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ✅ |
 | Scenario sliders + live cascade readout | You | Business/UX | ⬜ |
-| Reroute ranked-list card (executable plan) | You | Business | ⬜ |
+| Reroute ranked-list card (executable plan) | You | Business | 🟨 (hardcoded, not yet MCDM-driven) |
 | Latency badge (signal→recommendation) | You | Business | ⬜ |
 | Refinery + SPR markers | Teammate | UX | ⬜ |
 
 ## Packaging
 | Task | Owner | Status |
 |---|---|---|
-| docker-compose (api, web, chroma, redis) | You | ⬜ |
+| docker-compose (api, web, chroma, redis) | You | 🟨 (api+web done; chroma/redis land with Phase 2/3 RAG + caching) |
 | `.env.example` + README run steps | Teammate | ⬜ |
 | Clean-machine run verification | Teammate (QA) | ⬜ |
 

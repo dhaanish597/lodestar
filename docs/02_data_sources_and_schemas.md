@@ -50,6 +50,7 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
 - **Geographic narrowing:** add `bbox=25.27,55.16,27.37,57.34` for Hormuz.
 - **Noise control:** prefer a `theme` filter (e.g. `theme=CRISISLEX_CRISISLEXREC`) and/or LLM relevance filtering on returned text.
 - **Response:** `timeline[].data[]` → `{date, value}` article-volume points. We MinMax-scale this into the risk feature `X_kinetic`.
+- **Implementation note:** `backend/app/ingestion/gdelt.py` implements exactly this query (`mode=TimelineVol`, `timespan=72h`, `bbox=25.27,55.16,27.37,57.34`) and MinMax-scales the latest timeline point into `[0,1]` — confirmed matching the documented query/timespan/bbox above. Theme filtering (`theme=CRISISLEX_CRISISLEXREC`) is not yet applied — `STUB →` noise-reduction improvement, Phase 2.
 
 ## 4. OpenSanctions — vessel / entity screening
 - **Base:** `https://api.opensanctions.org/match/default`
@@ -102,5 +103,7 @@ Hormuz is the demo spine. Bab-el-Mandeb + Malacca are "breadth = future work" �
 | `X_sanctions` | OpenSanctions | flagged / observed fleet |
 | `X_weather` | Open-Meteo | 1 if wave_height_max ≥ 4.0 m |
 | `X_freight` | FRED (BCTI) / Alpha Vantage | % deviation vs 90-day baseline |
+
+**Implementation note (`X_density`):** Phase 1 substitutes a short in-memory rolling window (`DensityTracker`, `backend/app/ingestion/density.py`, default 20 samples) for the 30-day MA baseline above — a live demo can't accumulate 30 days of history. `ASSUMPTION`, revisit if a persistent store is added. Cross-referenced in `04_model_assumptions_and_constants.md` §A.
 
 Risk model + scenario/reroute math live in `04_model_assumptions_and_constants.md`.
