@@ -11,6 +11,7 @@ from app.api.ws import router as ws_router
 from app.config import get_settings
 from app.ingestion.aisstream import AISStreamClient, VesselStore
 from app.ingestion.density import DensityTracker
+from app.ingestion.prices import PriceService
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,11 @@ async def lifespan(app: FastAPI):
         app.state.density_tracker = DensityTracker()
     if not hasattr(app.state, 'http_client') or app.state.http_client is None:
         app.state.http_client = httpx.AsyncClient(timeout=10.0)
+    if not hasattr(app.state, 'price_service') or app.state.price_service is None:
+        app.state.price_service = PriceService(
+            eia_api_key=settings.eia_api_key,
+            alphavantage_api_key=settings.alphavantage_api_key,
+        )
 
     ais_client = AISStreamClient(
         api_key=settings.aisstream_api_key,

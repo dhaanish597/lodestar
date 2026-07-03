@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.ingestion.aisstream import VesselStore
 from app.ingestion.density import DensityTracker
+from app.ingestion.prices import PriceService
 from app.main import app
 
 GDELT_RESPONSE = {"timeline": [{"data": [{"date": "20260701", "value": 3}, {"date": "20260702", "value": 6}]}]}
@@ -34,5 +35,86 @@ def test_risk_unknown_corridor_is_404():
 
     with TestClient(app) as client:
         resp = client.get("/risk/malacca")
+
+    assert resp.status_code == 404
+
+
+def _mock_handler(request: httpx.Request) -> httpx.Response:
+    url = str(request.url)
+    if "gdeltproject.org" in url:
+        return httpx.Response(200, json=GDELT_RESPONSE)
+    if "alphavantage.co" in url:
+        return httpx.Response(200, json={"data": [{"date": "2026-07-01", "value": "76.20"}]})
+    if "api.eia.gov" in url:
+        return httpx.Response(200, json={"response": {"data": [{"period": "2026-06-30", "value": "74.50"}]}})
+    return httpx.Response(404)
+
+
+def _app_with_mocks() -> None:
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+    app.state.price_service = PriceService(eia_api_key="k", alphavantage_api_key="k")
+
+
+def test_scenario_hormuz_returns_full_cascade():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        resp = client.get("/scenario/hormuz", params={"disruption_factor": 0.5})
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["corridor"] == "hormuz"
+    assert body["disruption_factor"] == 0.5
+    assert body["supply_gap_mbd"] > 0
+    assert "crude_price_rise_pct" in body
+
+
+def test_scenario_disruption_factor_changes_supply_gap():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        low = client.get("/scenario/hormuz", params={"disruption_factor": 0.1}).json()
+        high = client.get("/scenario/hormuz", params={"disruption_factor": 0.8}).json()
+
+    assert high["supply_gap_mbd"] > low["supply_gap_mbd"]
+
+
+def test_scenario_unknown_corridor_is_404():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        resp = client.get("/scenario/malacca")
+
+    assert resp.status_code == 404
+
+
+def test_reroute_hormuz_returns_ranked_options_with_grade_match():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        resp = client.get("/reroute/hormuz", params={"disruption_factor": 0.3})
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 6
+    scores = [o["score"] for o in body]
+    assert scores == sorted(scores, reverse=True)
+    merey = next(o for o in body if o["source_grade"] == "Merey")
+    assert merey["grade_match"] == 0.0
+
+
+def test_reroute_disruption_factor_changes_ranking_live():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        low = client.get("/reroute/hormuz", params={"disruption_factor": 0.0}).json()
+        high = client.get("/reroute/hormuz", params={"disruption_factor": 1.0}).json()
+
+    low_scores = {o["source_grade"]: o["score"] for o in low}
+    high_scores = {o["source_grade"]: o["score"] for o in high}
+    assert low_scores != high_scores
+
+
+def test_reroute_unknown_corridor_is_404():
+    _app_with_mocks()
+    with TestClient(app) as client:
+        resp = client.get("/reroute/malacca")
 
     assert resp.status_code == 404
