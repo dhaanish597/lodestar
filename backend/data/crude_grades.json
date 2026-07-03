@@ -1,0 +1,77 @@
+{
+  "grade_match_rule": "ASSUMPTION -> docs/04 SS C. Compatibility of each grade with India's refining mix, keyed on published API gravity + sulfur%: 1.0 (broadly compatible -- API>=28 and sulfur<=1.5%, most PSU + complex refiners can run it) | 0.5 (needs blending before simple/PSU refiners can run it; complex refiners take it natively -- 20<=API<28 or 1.5%<sulfur<=2.5%) | 0.0 (incompatible with the majority PSU/simple refining capacity, only deep-conversion coking refiners like RIL Jamnagar can process it -- API<20 or sulfur>2.5%). Voyage days and API/sulfur figures are docs/04 SS C table midpoints. price_differential_usd_bbl and base_congestion_penalty are illustrative ASSUMPTION values (not a live feed) -- STUB -> replace with live differentials/Portcast when available (docs/02 SS 8).",
+  "grades": [
+    {
+      "grade": "Urals",
+      "origin": "Russia",
+      "api_gravity": 31.0,
+      "sulfur_pct": 1.3,
+      "class": "medium_sour",
+      "voyage_days": 25,
+      "price_differential_usd_bbl": -15.0,
+      "base_congestion_penalty": 0.10,
+      "grade_match": 1.0,
+      "best_fit_refineries": ["RIL Jamnagar", "Nayara Vadinar"]
+    },
+    {
+      "grade": "WTI",
+      "origin": "United States",
+      "api_gravity": 39.0,
+      "sulfur_pct": 0.25,
+      "class": "light_sweet",
+      "voyage_days": 42,
+      "price_differential_usd_bbl": 2.0,
+      "base_congestion_penalty": 0.05,
+      "grade_match": 1.0,
+      "best_fit_refineries": ["IOCL", "BPCL", "HPCL"]
+    },
+    {
+      "grade": "Mars",
+      "origin": "United States",
+      "api_gravity": 30.0,
+      "sulfur_pct": 1.9,
+      "class": "medium_sour",
+      "voyage_days": 42,
+      "price_differential_usd_bbl": -1.0,
+      "base_congestion_penalty": 0.08,
+      "grade_match": 0.5,
+      "best_fit_refineries": ["RIL Jamnagar", "IOCL"]
+    },
+    {
+      "grade": "Bonny Light",
+      "origin": "West Africa",
+      "api_gravity": 35.0,
+      "sulfur_pct": 0.15,
+      "class": "light_sweet",
+      "voyage_days": 27,
+      "price_differential_usd_bbl": 1.5,
+      "base_congestion_penalty": 0.06,
+      "grade_match": 1.0,
+      "best_fit_refineries": ["PSU refiners"]
+    },
+    {
+      "grade": "Merey",
+      "origin": "Venezuela",
+      "api_gravity": 16.0,
+      "sulfur_pct": 2.7,
+      "class": "heavy_sour",
+      "voyage_days": 47,
+      "price_differential_usd_bbl": -22.0,
+      "base_congestion_penalty": 0.15,
+      "grade_match": 0.0,
+      "best_fit_refineries": ["RIL Jamnagar (coking only)"]
+    },
+    {
+      "grade": "Liza",
+      "origin": "Guyana",
+      "api_gravity": 32.0,
+      "sulfur_pct": 0.58,
+      "class": "medium_sweet",
+      "voyage_days": 47,
+      "price_differential_usd_bbl": 1.0,
+      "base_congestion_penalty": 0.07,
+      "grade_match": 1.0,
+      "best_fit_refineries": ["IOCL", "BPCL"]
+    }
+  ]
+}
