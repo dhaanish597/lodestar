@@ -53,8 +53,16 @@ utilization_drop_pct = supply_gap / india_total_crude_throughput_mbd
 - Effective SPR fill **64%** (Mar 2026, 3.37 MMT) → real independent buffer < 9.5 days. (slider: SPR fill %)
 - Plus OMC commercial ≈ **64.5 days** → total operational buffer ≈ **74 days** (below IEA's 90-day norm).
 ```
-days_cover_remaining = buffer_volume / daily_supply_gap
+buffer_days           = SPR_DEDICATED_DAYS_AT_FULL_FILL × spr_fill_pct + OMC_COMMERCIAL_DAYS
+days_cover_remaining  = buffer_days × (1 − utilization_drop_pct)
 ```
+`ASSUMPTION` (revised post Task-2 review): `days_cover_remaining` shrinks `buffer_days` proportionally to
+`utilization_drop_pct` (Step 2's fraction of unmet national demand), rather than dividing a fixed buffer
+volume by the raw supply gap. The literal `buffer_volume / daily_supply_gap` form blows toward infinity as
+the gap shrinks, producing a discontinuity where the metric *increases* for small disruption before
+decreasing at high disruption — the opposite of the intended "buffer depleting" narrative. The revised
+formula is monotonically decreasing across the full slider range and still anchors at the ~74-day baseline
+above when `disruption_factor = 0`.
 
 **Step 4 — Fuel price / CPI**
 RBI rule of thumb (sourced): a sustained **10%** rise in the Indian crude basket lifts headline CPI by **+0.3 to +0.4 pp**.
