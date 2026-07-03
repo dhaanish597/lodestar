@@ -39,6 +39,13 @@ def test_higher_disruption_shrinks_days_cover_remaining():
     assert high.days_cover_remaining < low.days_cover_remaining
 
 
+def test_days_cover_remaining_decreases_monotonically_near_zero_disruption():
+    zero = compute_scenario(corridor="hormuz", disruption_factor=0.0)
+    small = compute_scenario(corridor="hormuz", disruption_factor=0.05)
+    larger = compute_scenario(corridor="hormuz", disruption_factor=0.3)
+    assert zero.days_cover_remaining > small.days_cover_remaining > larger.days_cover_remaining
+
+
 def test_price_rise_pct_scales_with_disruption_and_sensitivity():
     assert crude_price_rise_pct(disruption_factor=0.3, price_sensitivity=1.0) == pytest.approx(30.0)
     assert crude_price_rise_pct(disruption_factor=0.3, price_sensitivity=0.5) == pytest.approx(15.0)

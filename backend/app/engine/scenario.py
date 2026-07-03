@@ -15,15 +15,16 @@ OMC_COMMERCIAL_DAYS = 64.5
 # --- ASSUMPTION anchors (docs/04 §B step5, dossier 2019 Abqaiq anchor) ---
 GDP_DRAG_BPS_PER_10PCT = 15.0
 
-# ASSUMPTION -> derives Step 4's crude_price_rise_pct directly from
-# disruption_factor so that one slider cascades through all 5 steps, instead
-# of requiring a second independent "price rise" slider. Calibrated 1:1 as
-# the simplest defensible default; revisit with a historical regression.
-# docs/04 §B step4.
+# ASSUMPTION -> no doc precedent for this mechanism; derives Step 4's
+# crude_price_rise_pct directly from disruption_factor so that one slider
+# cascades through all 5 steps, instead of requiring a second independent
+# "price rise" slider. Calibrated 1:1 as the simplest defensible default;
+# TODO: validate against a historical regression.
 PRICE_SENSITIVITY = 1.0
 
-# ASSUMPTION -> used only if the caller doesn't supply a live price (e.g. no
-# PriceService wired). Mirrors prices.BRENT_FALLBACK_USD_BBL. docs/04 §B.
+# STUB -> no cited source, arbitrary placeholder; used only if the caller
+# doesn't supply a live price (e.g. no PriceService wired). Mirrors
+# prices.BRENT_FALLBACK_USD_BBL (backend/app/ingestion/prices.py).
 BRENT_BASELINE_USD_BBL = 75.0
 
 
@@ -49,15 +50,24 @@ def compute_scenario(
     supply_gap_mbd = india_hormuz_volume * disruption_factor * (1 - substitution_rate)
 
     # Step 2 — refinery run-rate impact.
-    # ASSUMPTION -> denominator uses india_imports_mbd (imports ~90% of
-    # throughput per docs/01) rather than a separately-derived MMT/month
+    # ASSUMPTION -> denominator uses india_imports_mbd (India crude import
+    # dependence ~90%, docs/04 SS B) rather than a separately-derived MMT/month
     # throughput figure, to avoid inventing an unsourced unit conversion.
     utilization_drop_pct = supply_gap_mbd / india_imports_mbd if india_imports_mbd else 0.0
 
-    # Step 3 — SPR / buffer drawdown
+    # Step 3 — SPR / buffer drawdown.
+    # ASSUMPTION -> days_cover_remaining shrinks buffer_days proportionally to
+    # utilization_drop_pct (the fraction of total national demand now unmet),
+    # rather than dividing a fixed buffer volume by the raw supply gap. The
+    # latter blows toward infinity as the gap shrinks (buffer/gap -> large as
+    # gap -> 0), producing a discontinuity where the metric INCREASES for
+    # small disruption before decreasing at high disruption -- the opposite
+    # of the intended "buffer depleting" narrative. This formula is
+    # monotonically decreasing in disruption_factor across the full documented
+    # slider range and anchors exactly at the doc's ~74-day baseline
+    # (docs/04 SS B step3) when disruption_factor=0.
     buffer_days = SPR_DEDICATED_DAYS_AT_FULL_FILL * spr_fill_pct + OMC_COMMERCIAL_DAYS
-    buffer_volume_mb = buffer_days * india_imports_mbd
-    days_cover_remaining = buffer_volume_mb / supply_gap_mbd if supply_gap_mbd > 0 else buffer_days
+    days_cover_remaining = buffer_days * (1 - utilization_drop_pct)
 
     # Step 4 — fuel price / CPI
     price_rise_pct = crude_price_rise_pct(disruption_factor, price_sensitivity)
