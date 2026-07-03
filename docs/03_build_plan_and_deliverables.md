@@ -21,12 +21,12 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 | AIS pipeline hop-by-hop diagnostic logging (a–e) + empty-key guard | You | Tech | ✅ |
 | AIS task pinning (GC fix) + done-callback + raw-message logging + receive-loop exception hardening | You | Tech | ✅ |
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
-| EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ⬜ |
+| EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4) |
 | Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
 | Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic + density live, sanctions/weather/freight stubbed at 0 pending Phase 2) |
-| Scenario cascade engine (5 steps, all sliders) | You | Business | ⬜ |
-| Reroute MCDM (grade_match matrix) | You | Business | ⬜ |
+| Scenario cascade engine (5 steps, all sliders) | You | Business | ✅ (engine done Task 2; `GET /scenario/{corridor}` wired live Task 4) |
+| Reroute MCDM (grade_match matrix) | You | Business | ✅ (engine done Task 3; `GET /reroute/{corridor}` wired live Task 4) |
 | LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |
 | Chroma RAG over policy/geopolitics docs | Teammate | Innov | ⬜ |
 

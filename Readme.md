@@ -90,7 +90,7 @@ All constants, weights, and assumptions live in `docs/04_model_assumptions_and_c
 ### Prerequisites
 
 - Docker + Docker Compose
-- An AISStream API key (free-tier) — this is the only key Phase 1 actually calls. GDELT needs no key. EIA, Alpha Vantage, OpenSanctions, and FRED keys are accepted in `.env` but their connectors are Phase 2 work not yet wired; the app runs fully without them (those risk features are `STUB → 0.0`).
+- An AISStream API key (free-tier) — this is the only key Phase 1 actually calls. GDELT needs no key. EIA and Alpha Vantage are now wired backend-side (`PriceService`, live via `GET /scenario/{corridor}` and `GET /reroute/{corridor}`) but optional — the app runs fully without them, falling back to a static Brent baseline (`BRENT_FALLBACK_USD_BBL`). OpenSanctions and FRED keys are accepted in `.env` but their connectors are still Phase 2 work not yet wired; the app runs fully without them (those risk features are `STUB → 0.0`).
 
 ### 1. Configure environment
 
@@ -122,6 +122,9 @@ docker compose up --build
 | API | http://localhost:8000 |
 | Health check | http://localhost:8000/health |
 | Vessel stream | ws://localhost:8000/ws/vessels |
+| Corridor risk | http://localhost:8000/risk/hormuz |
+| Scenario cascade | http://localhost:8000/scenario/hormuz |
+| Reroute ranking | http://localhost:8000/reroute/hormuz |
 
 Open **http://localhost:3000** and you should see live tankers moving in the Strait of Hormuz with a live corridor risk percentage.
 
@@ -136,8 +139,8 @@ lodestar/
       main.py            # FastAPI app, /health, mounts /ws
       config.py          # env keys, corridor constants
       models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption
-      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); eia, alphavantage, openmeteo, fred, sanctions land with Phase 2
-      engine/            # risk.py (Phase 1); scenario.py, reroute.py land with Phase 2
+      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); openmeteo, fred, sanctions still to land
+      engine/            # risk.py (Phase 1); scenario.py, reroute.py (Phase 2, wired live via /scenario and /reroute)
       agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
       rag/               # Phase 3: store.py, ingest.py (not yet present)
       api/               # routes.py, ws.py
