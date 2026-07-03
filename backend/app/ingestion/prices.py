@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 EIA_URL = "https://api.eia.gov/v2/petroleum/pri/spt/data/"
 ALPHAVANTAGE_URL = "https://www.alphavantage.co/query"
 
-# ASSUMPTION -> served only if both EIA and Alpha Vantage are unset/unreachable
-# (e.g. no keys configured in a fresh dev environment). docs/04 §B.
+# STUB -> no cited source, arbitrary placeholder; served only if both EIA and
+# Alpha Vantage are unset/unreachable (e.g. no keys configured in a fresh dev
+# environment). TODO: source from an EIA STEO Brent forecast anchor.
 BRENT_FALLBACK_USD_BBL = 75.0
 
 
