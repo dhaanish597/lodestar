@@ -43,6 +43,9 @@ class Scenario(BaseModel):
     gdp_drag_bps: float
     cad_sensitivity: float
     cad_widening_pct_gdp: float
+    crude_price_rise_pct: float
+    price_sensitivity: float
+    brent_baseline_usd_bbl: float
 
 
 class RerouteOption(BaseModel):

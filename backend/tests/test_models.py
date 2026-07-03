@@ -48,6 +48,9 @@ def test_scenario_and_reroute_contracts_instantiate():
         gdp_drag_bps=8.0,
         cad_sensitivity=0.35,
         cad_widening_pct_gdp=0.15,
+        crude_price_rise_pct=30.0,
+        price_sensitivity=1.0,
+        brent_baseline_usd_bbl=75.0,
     )
     r = RerouteOption(
         source_grade="Urals",
