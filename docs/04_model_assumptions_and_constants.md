@@ -44,9 +44,9 @@ supply_gap          = india_hormuz_volume × disruption_factor × (1 − substit
 
 **Step 2 — Refinery run-rate impact**
 ```
-utilization_drop_pct = supply_gap / india_total_crude_throughput_mbd
+utilization_drop_pct = supply_gap / india_imports_mbd
 ```
-`ASSUMPTION`: OMCs at ~100% baseline utilization; unmitigated gap degrades output linearly (no instant substitution).
+`ASSUMPTION`: OMCs at ~100% baseline utilization; unmitigated gap degrades output linearly (no instant substitution). Denominator uses `india_imports_mbd` rather than a separately-derived MMT/month throughput figure, to avoid inventing an unsourced unit conversion (`backend/app/engine/scenario.py`).
 
 **Step 3 — SPR / buffer drawdown**
 - Dedicated SPR Phase-I = **5.33 MMT (~39–40 Mbbl) ≈ 9.5 days** cover. Sites: Padur 2.50, Mangaluru 1.50, Vizag 1.33 MMT.
