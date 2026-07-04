@@ -40,6 +40,7 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
   `GET /v2/petroleum/pri/spt/data/?api_key=<KEY>&frequency=daily&data[]=value&facets[series][]=DCOILBRENTEU&facets[series][]=DCOILWTICO&sort[0][column]=period&sort[0][direction]=desc&length=60`
 - **Gotcha:** spot prices publish in **weekly batches (~Tuesdays)** → up to 1 week lag. Use for historical baselining/trend only; intraday falls back to Alpha Vantage.
 - **Note:** Hormuz throughput is **not** a live API — it's in static EIA/Vortexa special reports. Treat chokepoint baseline flow as a config constant (`~14.6–20 mb/d`) with a citation, not a feed.
+- **Implementation note:** `backend/app/ingestion/prices.py` implements the EIA connector as `EiaCache`, one leg of the `PriceService` orchestrator's fallback chain: Alpha Vantage (preferred, intraday-ish) → EIA (weekly baseline) → static `BRENT_FALLBACK_USD_BBL` constant if both are unset or unreachable. `EiaCache` carries a 3600s (1-hour) TTL, so it never fires directly on a page load.
 
 ## 3. GDELT 2.0 DOC API — geopolitical early warning (no key)
 - **Base:** `https://api.gdeltproject.org/api/v2/doc/doc`
@@ -71,6 +72,7 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
 - **Free:** **25 requests/day** — hard cap.
 - **Brent / WTI:** `?function=BRENT&interval=daily&apikey=<KEY>` (also `WTI`).
 - **Mandatory caching:** query once/hour (or once/day), cache in Redis/memory, serve cached to clients. Never call on page load.
+- **Implementation note:** `backend/app/ingestion/prices.py` implements this connector as `AlphaVantageCache`, the preferred leg of the `PriceService` orchestrator's fallback chain (Alpha Vantage → EIA → static `BRENT_FALLBACK_USD_BBL`). Its mandatory 1-hour TTL guarantees at most ~24 real Alpha Vantage calls/day regardless of frontend poll frequency — safely under the 25/day free-tier cap — and it never fires directly on a page load.
 
 ## 6. Open-Meteo Marine — sea state on routes (no key)
 - **Base:** `https://marine-api.open-meteo.com/v1/marine`

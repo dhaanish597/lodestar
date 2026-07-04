@@ -38,8 +38,8 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 | Frontend WS hop-e console logging (vessel stream diagnostics) | You | Tech | ✅ |
 | Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
 | Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ✅ |
-| Scenario sliders + live cascade readout | You | Business/UX | ⬜ |
-| Reroute ranked-list card (executable plan) | You | Business | 🟨 (hardcoded, not yet MCDM-driven) |
+| Scenario sliders + live cascade readout | You | Business/UX | ✅ (live via Tasks 6 and 8 — `ScenarioCard` has 6 live sliders wired to `/scenario/hormuz`, debounced 250ms) |
+| Reroute ranked-list card (executable plan) | You | Business | ✅ (now live via Tasks 7 and 8 — `RerouteCard` fetches `/reroute/hormuz`, MCDM-ranked, debounced 250ms) |
 | Latency badge (signal→recommendation) | You | Business | ⬜ |
 | Refinery + SPR markers | Teammate | UX | ⬜ |
 
@@ -53,7 +53,7 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 ## Data (delegate-friendly)
 | Task | Owner | Status |
 |---|---|---|
-| `refineries.json`, `spr.json`, `corridors.json`, `crude_grades.json` curated + source-verified | Teammate | ⬜ |
+| `refineries.json`, `spr.json`, `corridors.json`, `crude_grades.json` curated + source-verified | Teammate | 🟨 (`crude_grades.json` done — Task 3, source-verified per its `grade_match_rule` field; `refineries.json`/`spr.json` still ⬜, teammate-owned per docs/04 §D's delegated QA note) |
 | RAG corpus: 10–20 public PDFs/articles (PPAC, EIA, IEA, ORF) | Teammate | ⬜ |
 
 ## Cut-list (drop in this order if behind)

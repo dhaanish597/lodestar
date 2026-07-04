@@ -144,12 +144,12 @@ lodestar/
       agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
       rag/               # Phase 3: store.py, ingest.py (not yet present)
       api/               # routes.py, ws.py
-    data/                # corridors.json (Phase 1); refineries.json, spr.json, crude_grades.json land with Phase 2
+    data/                # corridors.json (Phase 1); crude_grades.json now present (Phase 2, Task 3); refineries.json, spr.json still pending (teammate-owned)
     tests/               # conftest.py + test_*.py (Phase 1: health, models, aisstream, dead_reckoning, density, gdelt, risk, routes, ws_vessels)
     requirements.txt  Dockerfile  .dockerignore  .env.example  pytest.ini
   frontend/
     app/                 # page.tsx, layout.tsx
-    components/          # MapDeck, RiskPanel, ScenarioCard, RerouteCard (Phase 1: hardcoded scenario/reroute; ScenarioSliders/LatencyBadge are Phase 2/3)
+    components/          # MapDeck, RiskPanel, ScenarioCard, RerouteCard (ScenarioCard/RerouteCard now live-wired to /scenario and /reroute, Tasks 6-8; LatencyBadge still not yet built, Phase 3)
     lib/                 # types.ts, ws.ts
     package.json  Dockerfile  .dockerignore
   docs/                  # 01 strategy · 02 data sources · 03 build plan · 04 assumptions
@@ -194,6 +194,7 @@ Known constraints, handled explicitly:
 - **Chokepoint throughput** — not a live API; treated as a cited config constant, not a feed.
 - **GDELT rate limits** — GDELT enforces ~1 req/5s; the connector uses a 120s TTL in-memory cache and respects `Retry-After` headers on 429 responses, serving the last good cached value while rate-limited.
 - **GDELT window** — only the most recent 90 days are queryable.
+- **Reroute landed cost** — includes an illustrative price differential + freight-per-day proxy (not a live feed), labeled `ASSUMPTION`/`STUB` in `crude_grades.json` and `reroute.py`.
 
 ---
 

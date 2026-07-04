@@ -114,3 +114,11 @@ Score(alt) = w_cost·norm(1/landed_cost)
 **SPR sites (lat, lon, MMT):** Padur 13.30, 74.78 — 2.50 · Mangaluru 12.87, 74.84 — 1.50 · Vizag 17.69, 83.21 — 1.33
 
 > Verify all coordinates and capacities against PPAC / Wikipedia before the deck — flagged as a delegated QA task.
+
+## E. Reroute engine — implementation constants (Phase 2)
+Two implementation-only constants in `backend/app/engine/reroute.py`, not yet itemized above:
+
+- **`FREIGHT_PROXY_USD_BBL_PER_DAY = 0.10`** — `STUB → FRED BCTI/BDI freight proxy, docs/02 §7` (cut-list #2). `ASSUMPTION`: a ballpark tanker freight cost per voyage-day, applied uniformly across grades, added to landed cost as `FREIGHT_PROXY_USD_BBL_PER_DAY × grade.voyage_days`.
+- **`CONGESTION_DISRUPTION_SENSITIVITY = 0.15`** — `STUB → Portcast, docs/02 §8`. `ASSUMPTION`: port congestion stress rises with corridor `disruption_factor` as buyers scramble for the same alternative barrels, scaled by a grade's relative voyage exposure (`voyage_days / 30`).
+
+Grade compatibility (`grade_match`), API gravity/sulfur figures, voyage days, price differentials, and per-grade congestion baselines are **not** re-derived here — the authoritative, source-annotated values live in `backend/data/crude_grades.json`'s `grade_match_rule` field, which documents exactly which figures are sourced table midpoints (docs/04 §C) versus `ASSUMPTION` estimates within a qualitative range versus illustrative `STUB` placeholders pending live feeds. Read that field before citing any individual grade's numbers.
