@@ -38,6 +38,9 @@ export interface Scenario {
   gdp_drag_bps: number;
   cad_sensitivity: number;
   cad_widening_pct_gdp: number;
+  crude_price_rise_pct: number;
+  price_sensitivity: number;
+  brent_baseline_usd_bbl: number;
 }
 
 export interface RerouteOption {
@@ -51,4 +54,13 @@ export interface RerouteOption {
   congestion_penalty: number;
   score: number;
   best_fit_refineries: string[];
+}
+
+export interface ScenarioInputs {
+  disruption_factor: number;
+  substitution_rate: number;
+  hormuz_share: number;
+  spr_fill_pct: number;
+  cpi_sensitivity: number;
+  cad_sensitivity: number;
 }
