@@ -67,8 +67,13 @@ above when `disruption_factor = 0`.
 **Step 4 — Fuel price / CPI**
 RBI rule of thumb (sourced): a sustained **10%** rise in the Indian crude basket lifts headline CPI by **+0.3 to +0.4 pp**.
 ```
-cpi_delta_pp = (crude_price_rise_pct / 10) × cpi_sensitivity     # cpi_sensitivity slider 0.3–0.4
+crude_price_rise_pct = disruption_factor × price_sensitivity × 100
+cpi_delta_pp          = (crude_price_rise_pct / 10) × cpi_sensitivity     # cpi_sensitivity slider 0.3–0.4
 ```
+`PRICE_SENSITIVITY = 1.0` (`ASSUMPTION`, no doc precedent for this mechanism — `backend/app/engine/scenario.py`): derives `crude_price_rise_pct` directly from `disruption_factor` so one slider drives the whole 5-step cascade, instead of requiring a second independent "price rise" slider. Calibrated 1:1 as the simplest defensible default; `TODO` validate against a historical regression.
+
+`BRENT_BASELINE_USD_BBL = 75.0` (`STUB → no cited source, arbitrary placeholder`, `backend/app/engine/scenario.py`): used only if the caller doesn't supply a live price (mirrors `prices.BRENT_FALLBACK_USD_BBL`, `backend/app/ingestion/prices.py`) — in practice `/scenario/{corridor}` always overrides this with `PriceService.get_brent_price()`'s live-or-fallback Brent quote.
+
 Historical anchor: Apr 2026 basket hit **$114/bbl**; RBI noted CPI 3.5%→3.9% via fuel pass-through.
 
 **Step 5 — GDP & CAD**
