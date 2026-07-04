@@ -1,40 +1,85 @@
 // frontend/components/ScenarioCard.tsx
 "use client";
 
-import type { Scenario } from "@/lib/types";
+import { useEffect, useState } from "react";
+import type { Scenario, ScenarioInputs } from "@/lib/types";
+import { useDebounce } from "@/lib/useDebounce";
 
-// HARDCODED — proves the UI pipe end to end. Phase 2 replaces this with a live
-// POST to a /scenario endpoint driven by slider state (see docs/04 §B).
-const HARDCODED_SCENARIO: Scenario = {
-  corridor: "hormuz",
-  disruption_factor: 0.3,
-  substitution_rate: 0.2,
-  hormuz_share: 0.45,
-  india_imports_mbd: 4.7,
-  supply_gap_mbd: 0.51,
-  utilization_drop_pct: 0.06,
-  spr_fill_pct: 0.64,
-  days_cover_remaining: 9.5,
-  cpi_sensitivity: 0.35,
-  cpi_delta_pp: 0.24,
-  gdp_drag_bps: 8.1,
-  cad_sensitivity: 0.35,
-  cad_widening_pct_gdp: 0.17,
-};
+const SLIDER_CONFIG: { key: keyof ScenarioInputs; label: string; min: number; max: number; step: number }[] = [
+  { key: "disruption_factor", label: "Disruption", min: 0, max: 1, step: 0.01 },
+  { key: "substitution_rate", label: "Substitution rate", min: 0, max: 1, step: 0.01 },
+  { key: "hormuz_share", label: "Hormuz share of imports", min: 0.3, max: 0.6, step: 0.01 },
+  { key: "spr_fill_pct", label: "SPR fill", min: 0, max: 1, step: 0.01 },
+  { key: "cpi_sensitivity", label: "CPI sensitivity", min: 0.3, max: 0.4, step: 0.01 },
+  { key: "cad_sensitivity", label: "CAD sensitivity", min: 0.2, max: 0.5, step: 0.01 },
+];
 
-export default function ScenarioCard() {
-  const s = HARDCODED_SCENARIO;
+export default function ScenarioCard({
+  apiUrl,
+  inputs,
+  onChange,
+}: {
+  apiUrl: string;
+  inputs: ScenarioInputs;
+  onChange: (next: ScenarioInputs) => void;
+}) {
+  const [scenario, setScenario] = useState<Scenario | null>(null);
+  const debouncedInputs = useDebounce(inputs, 250);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchScenario() {
+      const params = new URLSearchParams(
+        Object.fromEntries(Object.entries(debouncedInputs).map(([k, v]) => [k, String(v)]))
+      );
+      try {
+        const resp = await fetch(`${apiUrl}/scenario/hormuz?${params}`);
+        if (resp.ok && !cancelled) {
+          setScenario(await resp.json());
+        }
+      } catch {
+        // network hiccup, next slider move retries
+      }
+    }
+    fetchScenario();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, debouncedInputs]);
+
   return (
     <div className="panel">
-      <h2>Scenario — 30% disruption (hardcoded, Phase 2 wires sliders)</h2>
-      <ul style={{ listStyle: "none", padding: 0, fontSize: 14, lineHeight: 1.8 }}>
-        <li>Supply gap: {s.supply_gap_mbd.toFixed(2)} mb/d</li>
-        <li>Refinery utilization drop: {(s.utilization_drop_pct * 100).toFixed(1)}%</li>
-        <li>SPR + commercial days cover: {s.days_cover_remaining.toFixed(1)} days</li>
-        <li>CPI impact: +{s.cpi_delta_pp.toFixed(2)} pp</li>
-        <li>GDP drag: {s.gdp_drag_bps.toFixed(1)} bps</li>
-        <li>CAD widening: {(s.cad_widening_pct_gdp * 100).toFixed(2)}% of GDP</li>
-      </ul>
+      <h2>Scenario — macro cascade</h2>
+      {SLIDER_CONFIG.map(({ key, label, min, max, step }) => (
+        <div key={key} style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 12, opacity: 0.8, display: "flex", justifyContent: "space-between" }}>
+            <span>{label}</span>
+            <span>{inputs[key].toFixed(2)}</span>
+          </label>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={inputs[key]}
+            onChange={(e) => onChange({ ...inputs, [key]: Number(e.target.value) })}
+            style={{ width: "100%" }}
+          />
+        </div>
+      ))}
+      {!scenario ? (
+        <div>Loading cascade…</div>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, fontSize: 14, lineHeight: 1.8 }}>
+          <li>Supply gap: {scenario.supply_gap_mbd.toFixed(2)} mb/d</li>
+          <li>Refinery utilization drop: {(scenario.utilization_drop_pct * 100).toFixed(1)}%</li>
+          <li>SPR + commercial days cover: {scenario.days_cover_remaining.toFixed(1)} days</li>
+          <li>Crude price rise: +{scenario.crude_price_rise_pct.toFixed(1)}%</li>
+          <li>CPI impact: +{scenario.cpi_delta_pp.toFixed(2)} pp</li>
+          <li>GDP drag: {scenario.gdp_drag_bps.toFixed(1)} bps</li>
+          <li>CAD widening: {(scenario.cad_widening_pct_gdp * 100).toFixed(2)}% of GDP</li>
+        </ul>
+      )}
     </div>
   );
 }
