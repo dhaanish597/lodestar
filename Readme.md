@@ -123,10 +123,11 @@ docker compose up --build
 | Health check | http://localhost:8000/health |
 | Vessel stream | ws://localhost:8000/ws/vessels |
 | Corridor risk | http://localhost:8000/risk/hormuz |
+| AIS coverage state | http://localhost:8000/coverage |
 | Scenario cascade | http://localhost:8000/scenario/hormuz |
 | Reroute ranking | http://localhost:8000/reroute/hormuz |
 
-Open **http://localhost:3000** and you should see live tankers moving in the Strait of Hormuz with a live corridor risk percentage.
+Open **http://localhost:3000**: the map opens on the Strait of Hormuz with a live corridor risk percentage. **AISStream has no terrestrial receivers in the Persian Gulf or on the India west coast** (empirically verified — see "AIS coverage reality" in `docs/03`), so the Hormuz frame shows no vessel dots and the risk panel's density feature honestly badges "AIS: no terrestrial coverage in corridor". Pan/zoom the map southeast to the **Singapore Strait** (the live subscribed box inside the Malacca corridor) to see real vessels streaming. `GET /coverage` shows the per-box coverage state.
 
 ---
 
@@ -144,9 +145,10 @@ lodestar/
       agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
       rag/               # Phase 3: store.py, ingest.py (not yet present)
       api/               # routes.py, ws.py
-    data/                # corridors.json (Phase 1); crude_grades.json now present (Phase 2, Task 3); refineries.json, spr.json still pending (teammate-owned)
-    tests/               # conftest.py + test_*.py (Phase 1: health, models, aisstream, dead_reckoning, density, gdelt, risk, routes, ws_vessels)
+    data/                # corridors.json, ais_boxes.json (AIS multi-box subscription config); crude_grades.json (Phase 2, Task 3); refineries.json, spr.json still pending (teammate-owned)
+    tests/               # conftest.py + test_*.py (health, models, aisstream, coverage, dead_reckoning, density, gdelt, risk, routes, ws_vessels)
     requirements.txt  Dockerfile  .dockerignore  .env.example  pytest.ini
+  scripts/               # committed diagnostics: diag_aisstream.py (subscription matrix), diag_relay.py (/ws/vessels end-to-end check)
   frontend/
     app/                 # page.tsx, layout.tsx
     components/          # MapDeck, RiskPanel, ScenarioCard, RerouteCard (ScenarioCard/RerouteCard now live-wired to /scenario and /reroute, Tasks 6-8; LatencyBadge still not yet built, Phase 3)
@@ -167,13 +169,19 @@ The AIS data path from source to map has five hops, each instrumented with diagn
 |-----|-------|---------|----------------|
 | **(a)** Socket open | `aisstream.py` → `run()` | `[AIS hop-a]` | WebSocket connected to AISStream |
 | **(b)** Subscription sent | `aisstream.py` → `_consume()` | `[AIS hop-b]` | Correct payload (masked key, bbox) sent within 3s |
+| | | `[AIS hop-b-raw]` | Full, unmasked subscribe JSON actually written to the socket (post-`ws.send`) |
 | **(c)** Positions received | `aisstream.py` → `_consume()` loop | `[AIS hop-c]` | First vessel logged loudly; every 50th summarized |
-| | | `[AIS raw]` | **Every** raw message logged (type + first 200 chars) before parsing |
+| | | `[AIS hop-c-raw]` | Raw frame (type + first 500 chars) logged **before** MessageType filtering — unconditionally for the first 20 messages after connect, and for any non-`PositionReport` message for the life of the connection |
+| | | `[AIS hop-c-error]` | Full `traceback.format_exc()` for any exception parsing/handling a single message; the receive loop logs and continues instead of dying |
 | **(d)** Relay broadcast | `ws.py` → `ws_vessels()` | `[WS hop-d]` | Vessel count per broadcast to each frontend client |
 | **(e)** Frontend received | `ws.ts` → `useVesselStream()` | `[WS hop-e]` | Browser console: first message + periodic counts |
 | Task lifecycle | `main.py` → `_log_task_result()` | `[AIS-TASK]` | Fires when the AIS task exits (exception, cancel, or clean) |
 
-**To diagnose a dead pipeline:** check `docker compose logs api` for hops a–d. If hop-a never appears, the container can’t reach AISStream. If hop-b appears but `[AIS raw]` never does, the server isn’t sending anything (bad key, empty bbox, or the connection was silently dropped). If `[AIS-TASK]` logs an exception, the background task died. Open browser DevTools console for hop-e.
+**To diagnose a dead pipeline:** check `docker compose logs api` for hops a–d. If hop-a never appears, the container can’t reach AISStream. If hop-b appears but `[AIS hop-c-raw]` never does, the server isn’t sending anything (bad key, empty bbox, or the connection was silently dropped). If `[AIS hop-c-error]` fires repeatedly, a schema mismatch is breaking parsing — read the traceback. If `[AIS-TASK]` logs an exception, the background task died. Open browser DevTools console for hop-e.
+
+**`BoundingBoxes` schema (confirmed):** AISStream requires triple nesting — a list of **one or more** boxes, each box being a list of exactly **two** `[lat, lon]` points: `[[[lat_min, lon_min], [lat_max, lon_max]], ...]`. The `[lat, lon]` point order was verified empirically (2026-07-05 diagnostic matrix: Dover in lat-lon streams instantly, axes-swapped gets nothing). `AISStreamClient._subscribe_payload()` asserts this shape and raises loudly before sending if it's ever malformed. The subscription is **multi-box** — all boxes in `backend/data/ais_boxes.json` go into one subscribe message, and every incoming frame is attributed to its containing box(es) in the per-box `CoverageMonitor` (`[AIS hop-b]` logs carry a `SENTINEL-MULTIBOX-20260705` image-freshness marker).
+
+**AIS coverage states:** a subscribed box with zero frames for a rolling 10-minute window reports `NO_TERRESTRIAL_COVERAGE` via `GET /coverage`; a corridor risk feature backed by an uncovered box is excluded from the risk sum (weights renormalized) and badged in the UI instead of reading a fake zero. This is by design: as of 2026-07-05 AISStream has **no receivers in the Persian Gulf or on the India west coast** — see the full evidence table in `docs/03`. Diagnostic scripts: `scripts/diag_aisstream.py` (subscription matrix, app must be down — single-session key) and `scripts/diag_relay.py` (asserts `/ws/vessels` delivers schema-correct vessels inside a subscribed box).
 
 The AIS background task is pinned to `app.state.ais_task` (preventing GC) and has a `done_callback` that logs any unhandled exception. The receive loop wraps each message in try/except so one bad message cannot kill the entire loop.
 
@@ -187,7 +195,7 @@ Lodestar's scenario engine is a **transparent, assumption-driven what-if tool** 
 
 Known constraints, handled explicitly:
 
-- **AIS coverage** — terrestrial receivers reach ~15–20 nm offshore; deep-ocean and "dark fleet" vessels drop out. Stale positions (>2h) are dead-reckoned and flagged `signal_lost`, never silently dropped.
+- **AIS coverage** — terrestrial receivers reach ~15–20 nm offshore; deep-ocean and "dark fleet" vessels drop out. Stale positions (>2h) are dead-reckoned and flagged `signal_lost`, never silently dropped. **Regional coverage voids are handled explicitly:** AISStream has no receivers in the Persian Gulf / India west coast (verified 2026-07-05, `docs/03`), so those boxes report `NO_TERRESTRIAL_COVERAGE` and the density risk feature is excluded (weights renormalized) rather than reading a fake zero.
 - **AIS task lifecycle** — the background task is pinned to `app.state.ais_task` (prevents GC) with a done-callback that logs any unhandled exception. The receive loop wraps each message in try/except so a single bad message cannot kill ingestion.
 - **API key guard** — if `AISSTREAM_API_KEY` is empty, the backend logs a loud `[STARTUP] ✗` error and the AIS client refuses to connect (instead of silently retrying forever).
 - **Price latency** — EIA spot prices publish weekly; intraday precision falls back to (cached) Alpha Vantage.

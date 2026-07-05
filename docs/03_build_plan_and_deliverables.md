@@ -13,6 +13,39 @@
 ## The spine (must run live on stage)
 Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible sliders) → ranked executable reroute plan → on the map → signal→recommendation latency badge.
 
+## AIS coverage reality (empirical, 2026-07-05) — why the multi-box design exists
+
+AISStream is a volunteer terrestrial-receiver network (~15–20 nm line-of-sight). We ran a controlled
+diagnostic matrix (`scripts/diag_aisstream.py`, app fully down, strictly sequential single-session runs)
+to separate two hypotheses for zero Hormuz frames: H1 "the subscription silently expects a different
+coordinate order" vs H2 "there are no receivers feeding the region". Raw results:
+
+| Case | Box | Order | Filter | Duration | Frames | First frame |
+|---|---|---|---|---|---|---|
+| A | Worldwide `[[-90,-180],[90,180]]` | — | PositionReport | 30s (early-stop 100) | **100** | t=0.0s |
+| B | Dover Strait `[[50.5,0.5],[51.5,2.0]]` | lat-lon | PositionReport | 120s | **39** | t=0.0s |
+| C | Dover Strait, axes swapped | lon-lat | PositionReport | 120s | 0 | — |
+| D | Hormuz `[[25.2732,55.1647],[27.3713,57.3419]]` | lat-lon | PositionReport | 120s | 0 | — |
+| E | Hormuz, axes swapped | lon-lat | PositionReport | 120s | 0 | — |
+| F | Entire Gulf + Gulf of Oman `[[20,48],[30,65]]` | lat-lon | **none** | 180s | 0 | — |
+| G | India west coast `[[19.5,68.5],[23.5,73.0]]` | lat-lon | **none** | 180s | 0 | — |
+| H | Singapore Strait `[[1.0,103.3],[1.6,104.4]]` | lat-lon | PositionReport | 120s | **11** | t=0.0s |
+
+**Conclusion:** B live + C dead proves the server requires `[lat, lon]` — exactly what the app already
+sends, so H1 is falsified. D/E/F/G all zero (F and G with *no* message-type filter, over the entire
+Gulf) proves the Persian Gulf, Gulf of Oman, **and the India west coast** are AISStream coverage
+voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Netherlands, France; H: Singapore).
+
+**Design response** (all config-driven via `backend/data/ais_boxes.json`):
+1. **Multi-box single subscription** — Hormuz (kept: costs nothing, lights up if a receiver appears),
+   India west coast (same rationale), Singapore Strait (live; inside the named Malacca corridor).
+2. **Per-box coverage state** (`backend/app/ingestion/coverage.py`): zero frames for a rolling
+   `COVERAGE_WINDOW_SECONDS = 600` window → `NO_TERRESTRIAL_COVERAGE`. The corridor's density feature
+   is then **excluded from the risk sum with weights renormalized** and the UI badge reads
+   "AIS: no terrestrial coverage in corridor" — never a silent fake zero. `GET /coverage` exposes state.
+3. To add/remove a box: edit `ais_boxes.json` (bbox is `[lat_min, lon_min, lat_max, lon_max]`,
+   `corridor` links it to a corridor's risk features or `null`) and restart the api service.
+
 ## Backend
 | Task | Owner | Rubric | Status |
 |---|---|---|---|
@@ -20,6 +53,10 @@ Real Hormuz AIS → corridor risk score (explainable) → macro cascade (visible
 | AISStream WS client + dead-reckoning + `/ws/vessels` relay | You | Tech/Innov | ✅ |
 | AIS pipeline hop-by-hop diagnostic logging (a–e) + empty-key guard | You | Tech | ✅ |
 | AIS task pinning (GC fix) + done-callback + raw-message logging + receive-loop exception hardening | You | Tech | ✅ |
+| AIS hop-b-raw (full subscribe payload post-send) + hop-c-raw (pre-filter raw frame, first 20 msgs + all non-PositionReport) + hop-c-error (`traceback.format_exc()`, loop never dies) + BoundingBoxes triple-nesting assertion | You | Tech | ✅ |
+| AIS coverage-void root-cause (diagnostic matrix A–H, `scripts/diag_aisstream.py` + `scripts/diag_relay.py`) | You | Tech | ✅ |
+| Config-driven multi-box AIS subscription (`ais_boxes.json`) + per-box `CoverageMonitor` + `GET /coverage` | You | Tech/Innov | ✅ |
+| Risk feature coverage states (`feature_states`, weight renormalization on `NO_TERRESTRIAL_COVERAGE`/`WARMING_UP`) + UI badge | You | Innov/Tech | ✅ |
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4) |
 | Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
