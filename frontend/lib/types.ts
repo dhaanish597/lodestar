@@ -21,6 +21,9 @@ export interface RiskScore {
   weights: Record<string, number>;
   features: Record<string, number>;
   contributions: Record<string, number>;
+  // LIVE | STUB | WARMING_UP | NO_TERRESTRIAL_COVERAGE — excluded states mean
+  // the feature was dropped from the risk sum (weights renormalized).
+  feature_states: Record<string, string>;
 }
 
 export interface Scenario {

@@ -44,20 +44,42 @@ export default function RiskPanel({ apiUrl }: { apiUrl: string }) {
       <h2>Strait of Hormuz — Disruption Probability</h2>
       <div style={{ fontSize: "2.5rem", fontWeight: 700 }}>{(risk.probability * 100).toFixed(1)}%</div>
       <div style={{ marginTop: 12 }}>
-        {Object.entries(risk.contributions).map(([feature, contribution]) => (
-          <div key={feature} style={{ marginBottom: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>{FEATURE_LABELS[feature] ?? feature}</div>
-            <div style={{ background: "#1c2330", borderRadius: 4, overflow: "hidden", height: 8 }}>
-              <div
-                style={{
-                  width: `${Math.min(contribution / risk.weights[feature], 1) * 100}%`,
-                  background: "#00c8ff",
-                  height: "100%",
-                }}
-              />
+        {Object.entries(risk.contributions).map(([feature, contribution]) => {
+          const state = risk.feature_states?.[feature];
+          const excluded = state === "NO_TERRESTRIAL_COVERAGE" || state === "WARMING_UP";
+          return (
+            <div key={feature} style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{FEATURE_LABELS[feature] ?? feature}</div>
+              {excluded ? (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#ffb04d",
+                    background: "#2a2116",
+                    border: "1px solid #5c4520",
+                    borderRadius: 4,
+                    padding: "2px 6px",
+                    display: "inline-block",
+                  }}
+                >
+                  {state === "NO_TERRESTRIAL_COVERAGE"
+                    ? "AIS: no terrestrial coverage in corridor — excluded from score"
+                    : "AIS: warming up — excluded from score"}
+                </div>
+              ) : (
+                <div style={{ background: "#1c2330", borderRadius: 4, overflow: "hidden", height: 8 }}>
+                  <div
+                    style={{
+                      width: `${Math.min(contribution / risk.weights[feature], 1) * 100}%`,
+                      background: "#00c8ff",
+                      height: "100%",
+                    }}
+                  />
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
