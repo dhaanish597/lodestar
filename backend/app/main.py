@@ -10,6 +10,7 @@ from app.api.routes import router as risk_router
 from app.api.ws import router as ws_router
 from app.config import get_settings
 from app.ingestion.aisstream import AISStreamClient, VesselStore
+from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
 from app.ingestion.prices import PriceService
 
@@ -49,10 +50,10 @@ async def lifespan(app: FastAPI):
     # ---- Startup diagnostics ----
     key = settings.aisstream_api_key
     masked = key[:8] + "…" if len(key) > 8 else "(EMPTY!)"
-    corridor = settings.corridors["hormuz"]
+    ais_boxes = settings.ais_boxes
     logger.info(
-        "[STARTUP] AISSTREAM_API_KEY=%s  corridor=hormuz  bbox=%s",
-        masked, corridor.bbox,
+        "[STARTUP] AISSTREAM_API_KEY=%s  ais_boxes=%s",
+        masked, {name: box.bbox for name, box in ais_boxes.items()},
     )
     if not key:
         logger.error(
@@ -70,6 +71,8 @@ async def lifespan(app: FastAPI):
         app.state.vessel_store = VesselStore()
     if not hasattr(app.state, 'density_tracker') or app.state.density_tracker is None:
         app.state.density_tracker = DensityTracker()
+    if not hasattr(app.state, 'coverage_monitor') or app.state.coverage_monitor is None:
+        app.state.coverage_monitor = CoverageMonitor(list(ais_boxes))
     if not hasattr(app.state, 'http_client') or app.state.http_client is None:
         app.state.http_client = httpx.AsyncClient(timeout=10.0)
     if not hasattr(app.state, 'price_service') or app.state.price_service is None:
@@ -80,8 +83,9 @@ async def lifespan(app: FastAPI):
 
     ais_client = AISStreamClient(
         api_key=settings.aisstream_api_key,
-        corridor=settings.corridors["hormuz"],
+        boxes=ais_boxes,
         store=app.state.vessel_store,
+        coverage=app.state.coverage_monitor,
     )
 
     # ---- Pin the task on app.state so it is never GC'd ----

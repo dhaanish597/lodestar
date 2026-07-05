@@ -26,6 +26,10 @@ class RiskScore(BaseModel):
     weights: dict[str, float]
     features: dict[str, float]
     contributions: dict[str, float]
+    # Per-feature provenance: LIVE | STUB | WARMING_UP | NO_TERRESTRIAL_COVERAGE.
+    # Excluded states mean the feature was dropped from the sum (weights
+    # renormalized) — never rendered as a genuine zero reading.
+    feature_states: dict[str, str] = {}
 
 
 class Scenario(BaseModel):

@@ -1,0 +1,17 @@
+{
+  "hormuz": {
+    "bbox": [25.2732, 55.1647, 27.3713, 57.3419],
+    "corridor": "hormuz",
+    "note": "The demo spine. Empirically NO terrestrial AISStream coverage as of 2026-07-05 (docs/03 'AIS coverage reality') — kept subscribed at zero cost so it lights up the moment a volunteer receiver appears; its risk density feature reports NO_TERRESTRIAL_COVERAGE instead of a fake zero."
+  },
+  "india_west_coast": {
+    "bbox": [19.5, 68.5, 23.5, 73.0],
+    "corridor": null,
+    "note": "Gujarat approaches + Mumbai — the Indian crude import terminals (Jamnagar, Vadinar, Sikka, Mundra, Mumbai) that Hormuz-transiting cargoes discharge at. Empirically ALSO a coverage void as of 2026-07-05 (diagnostic matrix case G: zero frames, no filter, 180s) — kept subscribed at zero cost like Hormuz; its coverage state reports honestly."
+  },
+  "malacca_singapore": {
+    "bbox": [1.0, 103.3, 1.6, 104.4],
+    "corridor": "malacca",
+    "note": "Singapore Strait — the densest segment of the Malacca corridor named in corridors.json (breadth corridor, not wired for risk in Phase 1). Verified live in the 2026-07-05 diagnostic matrix (case H)."
+  }
+}

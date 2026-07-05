@@ -3,12 +3,20 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from datetime import datetime, timezone
+
+from app.config import get_settings
 from app.ingestion.aisstream import VesselStore
+from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
 from app.ingestion.prices import PriceService
 from app.main import app
 
 GDELT_RESPONSE = {"timeline": [{"data": [{"date": "20260701", "value": 3}, {"date": "20260702", "value": 6}]}]}
+
+
+def _fresh_coverage_monitor() -> CoverageMonitor:
+    return CoverageMonitor(list(get_settings().ais_boxes))
 
 
 def test_risk_hormuz_returns_full_breakdown(monkeypatch):
@@ -17,6 +25,7 @@ def test_risk_hormuz_returns_full_breakdown(monkeypatch):
 
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
     with TestClient(app) as client:
@@ -26,11 +35,58 @@ def test_risk_hormuz_returns_full_breakdown(monkeypatch):
     body = resp.json()
     assert body["corridor"] == "hormuz"
     assert set(body["contributions"]) == {"kinetic", "density", "sanctions", "weather", "freight"}
+    assert set(body["feature_states"]) == set(body["contributions"])
+
+
+def test_risk_hormuz_density_state_reflects_coverage(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=GDELT_RESPONSE)
+
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    # Fresh monitor with no subscription/frames → density must be WARMING_UP,
+    # never a silent LIVE zero.
+    app.state.coverage_monitor = _fresh_coverage_monitor()
+    with TestClient(app) as client:
+        warming = client.get("/risk/hormuz").json()
+    assert warming["feature_states"]["density"] == "WARMING_UP"
+    assert warming["contributions"]["density"] == 0.0
+
+    # Monitor that has seen a Hormuz frame just now → density is LIVE.
+    covered_monitor = _fresh_coverage_monitor()
+    covered_monitor.mark_subscribed(now=datetime.now(timezone.utc))
+    covered_monitor.mark_frame("hormuz", now=datetime.now(timezone.utc))
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = covered_monitor
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(app) as client:
+        live = client.get("/risk/hormuz").json()
+    assert live["feature_states"]["density"] == "LIVE"
+
+
+def test_coverage_endpoint_reports_every_configured_box():
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
+    app.state.http_client = httpx.AsyncClient()
+
+    with TestClient(app) as client:
+        resp = client.get("/coverage")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body) == set(get_settings().ais_boxes)
+    for box in body.values():
+        assert {"state", "frames", "last_frame_utc"} <= set(box)
 
 
 def test_risk_unknown_corridor_is_404():
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
     app.state.http_client = httpx.AsyncClient()
 
     with TestClient(app) as client:
@@ -53,6 +109,7 @@ def _mock_handler(request: httpx.Request) -> httpx.Response:
 def _app_with_mocks() -> None:
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
     app.state.price_service = PriceService(eia_api_key="k", alphavantage_api_key="k")
 
