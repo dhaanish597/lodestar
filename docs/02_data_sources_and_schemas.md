@@ -82,11 +82,13 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
 - **Free:** 10,000 req/day.
 - **Query:** `?latitude=26.0&longitude=56.0&hourly=wave_height,wind_wave_direction,swell_wave_period`
 - **Use:** `X_weather = 1` if `wave_height_max ≥ threshold` (default 4.0 m) in the corridor, else 0. Units metric by default.
+- **Implementation note:** `backend/app/ingestion/weather.py` implements this connector as a per-corridor `WeatherCache`, keyed on the corridor bbox's center point (`WeatherService._bbox_center()`), so Hormuz and any other subscribed corridor get independent forecasts rather than sharing one lat/lon. Each `WeatherCache` carries a 1800s (30-min) TTL — hourly forecast data doesn't move fast enough to justify calling on every 10s frontend poll. `WAVE_HEIGHT_THRESHOLD_M = 4.0` is the flag threshold: forecast max `wave_height` at/above it sets `X_weather = 1`, else `0`.
 
 ## 7. FRED — freight / war-risk proxy (key, free)
 - **Base:** `https://api.stlouisfed.org/fred/series/observations`
 - **Use:** Baltic Clean Tanker Index (BCTI) / Baltic Dry Index (BDI) as systemic shipping-stress proxy. `X_freight = pct_deviation(current, 90d_baseline)`.
 - If a clean BCTI series ID isn't retrievable on free tier → `STUB →` static 90-day series + TODO.
+- **Implementation note:** `backend/app/ingestion/freight.py` confirmed live, 2026-07-10, via a direct query against FRED's series-search API that neither BCTI nor BDI exists as a FRED series — the Baltic Exchange doesn't license them to FRED. The connector substitutes `FREIGHT_SERIES_ID = "WPU301301"` ("Producer Price Index by Commodity: Transportation Services: Deep Sea Water Transportation of Freight", monthly, BLS via FRED), verified reachable with real data through 2026-05, as the nearest defensible live proxy for systemic ocean-freight cost. Because the series is monthly rather than daily, `N_BASELINE_MONTHS = 3` adapts this doc's literal "90-day baseline" language to "the 3 monthly prints preceding the latest one." `FREIGHT_STRESS_SCALE_PCT = 15.0` maps the resulting pct deviation from baseline onto the risk engine's `[0,1]` feature convention (a ≥15% deviation reads as full freight stress, `X_freight = 1.0`). `FreightCache` carries a 3600s (1-hour) TTL.
 
 ## 8. Port congestion — Portcast / Safecube (paywalled)
 - `STUB →` historical average anchorage wait per discharge port (Sikka/Jamnagar, Mumbai, Kochi, Vizag, Paradip). Feeds `CongestionPenalty` in the reroute MCDM. TODO: swap to Portcast `GET /schedules/port?code=INDMB` on trial key.

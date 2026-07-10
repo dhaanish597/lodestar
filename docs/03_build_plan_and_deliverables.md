@@ -59,9 +59,9 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Risk feature coverage states (`feature_states`, weight renormalization on `NO_TERRESTRIAL_COVERAGE`/`WARMING_UP`) + UI badge | You | Innov/Tech | ✅ |
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4) |
-| Open-Meteo + FRED connectors | Teammate | Scale | ⬜ |
+| Open-Meteo + FRED connectors | Teammate | Scale | ✅ (live — Open-Meteo Marine wave height; FRED WPU301301 substitutes unavailable BCTI/BDI, docs/02 §7) |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
-| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic + density live, sanctions/weather/freight stubbed at 0 pending Phase 2) |
+| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic/density/weather/freight live; sanctions stubbed — OPENSANCTIONS_API_KEY not configured) |
 | Scenario cascade engine (5 steps, all sliders) | You | Business | ✅ (engine done Task 2; `GET /scenario/{corridor}` wired live Task 4) |
 | Reroute MCDM (grade_match matrix) | You | Business | ✅ (engine done Task 3; `GET /reroute/{corridor}` wired live Task 4) |
 | LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |

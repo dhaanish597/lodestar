@@ -140,7 +140,7 @@ lodestar/
       main.py            # FastAPI app, /health, mounts /ws
       config.py          # env keys, corridor constants
       models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption
-      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); openmeteo, fred, sanctions still to land
+      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); weather.py (Open-Meteo Marine, Phase 2); freight.py (FRED, Phase 2); sanctions still to land
       engine/            # risk.py (Phase 1); scenario.py, reroute.py (Phase 2, wired live via /scenario and /reroute)
       agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
       rag/               # Phase 3: store.py, ingest.py (not yet present)
@@ -218,6 +218,7 @@ Known constraints, handled explicitly:
 - **GDELT rate limits** — GDELT enforces ~1 req/5s; the connector uses a 120s TTL in-memory cache and respects `Retry-After` headers on 429 responses, serving the last good cached value while rate-limited.
 - **GDELT window** — only the most recent 90 days are queryable.
 - **Reroute landed cost** — includes an illustrative price differential + freight-per-day proxy (not a live feed), labeled `ASSUMPTION`/`STUB` in `crude_grades.json` and `reroute.py`.
+- **Freight-stress feature (`X_freight`)** — uses FRED's deep-sea freight PPI (`WPU301301`) as a live substitute for BCTI/BDI, which are not available on FRED (verified 2026-07-10) — labeled in `docs/02` §7 and `freight.py`.
 
 ---
 
