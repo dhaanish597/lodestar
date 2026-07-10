@@ -20,13 +20,10 @@ def _fresh_coverage_monitor() -> CoverageMonitor:
 
 
 def test_risk_hormuz_returns_full_breakdown(monkeypatch):
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=GDELT_RESPONSE)
-
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.coverage_monitor = _fresh_coverage_monitor()
-    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
 
     with TestClient(app) as client:
         resp = client.get("/risk/hormuz")
@@ -103,7 +100,36 @@ def _mock_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"data": [{"date": "2026-07-01", "value": "76.20"}]})
     if "api.eia.gov" in url:
         return httpx.Response(200, json={"response": {"data": [{"period": "2026-06-30", "value": "74.50"}]}})
+    if "marine-api.open-meteo.com" in url:
+        return httpx.Response(200, json={"hourly": {"wave_height": [1.0, 4.5, 2.0]}})
+    if "api.stlouisfed.org" in url:
+        return httpx.Response(200, json={"observations": [
+            {"date": "2026-05-01", "value": "130.0"},
+            {"date": "2026-04-01", "value": "100.0"},
+            {"date": "2026-03-01", "value": "100.0"},
+            {"date": "2026-02-01", "value": "100.0"},
+        ]})
     return httpx.Response(404)
+
+
+def test_risk_hormuz_weather_and_freight_are_live_not_stub():
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+
+    with TestClient(app) as client:
+        resp = client.get("/risk/hormuz")
+
+    body = resp.json()
+    assert body["feature_states"]["weather"] == "LIVE"
+    assert body["feature_states"]["freight"] == "LIVE"
+    assert body["feature_states"]["sanctions"] == "STUB"  # no OPENSANCTIONS_API_KEY
+    # mocked wave_height max 4.5m >= 4.0m threshold -> X_weather=1 -> nonzero contribution
+    assert body["features"]["weather"] == 1.0
+    assert body["contributions"]["weather"] > 0.0
+    # mocked FRED: latest 130 vs baseline avg 100 -> +30% deviation -> clipped to 1.0
+    assert body["features"]["freight"] == pytest.approx(1.0)
 
 
 def _app_with_mocks() -> None:

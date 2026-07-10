@@ -12,8 +12,10 @@ from app.config import get_settings
 from app.ingestion.aisstream import AISStreamClient, VesselStore
 from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
+from app.ingestion.freight import FreightService
 from app.ingestion.gdelt import gdelt_poller
 from app.ingestion.prices import PriceService
+from app.ingestion.weather import WeatherService
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +83,10 @@ async def lifespan(app: FastAPI):
             eia_api_key=settings.eia_api_key,
             alphavantage_api_key=settings.alphavantage_api_key,
         )
+    if not hasattr(app.state, 'weather_service') or app.state.weather_service is None:
+        app.state.weather_service = WeatherService()
+    if not hasattr(app.state, 'freight_service') or app.state.freight_service is None:
+        app.state.freight_service = FreightService(fred_api_key=settings.fred_api_key)
 
     ais_client = AISStreamClient(
         api_key=settings.aisstream_api_key,
