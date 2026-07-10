@@ -41,8 +41,24 @@ export default function RiskPanel({ apiUrl }: { apiUrl: string }) {
 
   return (
     <div className="panel">
-      <h2>Strait of Hormuz — Disruption Probability</h2>
-      <div style={{ fontSize: "2.5rem", fontWeight: 700 }}>{(risk.probability * 100).toFixed(1)}%</div>
+      <h2 style={{ textTransform: "capitalize" }}>{risk.corridor.replace(/_/g, " ")} — Disruption Probability</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: "2.5rem", fontWeight: 700 }}>{(risk.probability * 100).toFixed(1)}%</div>
+        {risk.feature_states?.density === "NO_TERRESTRIAL_COVERAGE" && (
+          <div style={{
+            fontSize: 10,
+            fontWeight: "bold",
+            color: "#00ff9d",
+            background: "rgba(0, 255, 157, 0.1)",
+            border: "1px solid rgba(0, 255, 157, 0.5)",
+            borderRadius: 4,
+            padding: "4px 8px",
+            letterSpacing: 0.5,
+          }}>
+            AIS: NO TERRESTRIAL RECEIVERS IN REGION<br />KINETIC SIGNAL LIVE
+          </div>
+        )}
+      </div>
       <div style={{ marginTop: 12 }}>
         {Object.entries(risk.contributions).map(([feature, contribution]) => {
           const state = risk.feature_states?.[feature];
@@ -63,8 +79,8 @@ export default function RiskPanel({ apiUrl }: { apiUrl: string }) {
                   }}
                 >
                   {state === "NO_TERRESTRIAL_COVERAGE"
-                    ? "AIS: no terrestrial coverage in corridor — excluded from score"
-                    : "AIS: warming up — excluded from score"}
+                    ? "KNOWN SENSOR GAP: EXCLUDED FROM ALGORITHM"
+                    : "AIS: WARMING UP — EXCLUDED FROM SCORE"}
                 </div>
               ) : (
                 <div style={{ background: "#1c2330", borderRadius: 4, overflow: "hidden", height: 8 }}>

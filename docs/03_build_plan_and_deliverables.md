@@ -83,7 +83,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 ## Packaging
 | Task | Owner | Status |
 |---|---|---|
-| docker-compose (api, web, chroma, redis) | You | 🟨 (api+web done; chroma/redis land with Phase 2/3 RAG + caching) |
+| docker-compose (api, web, chroma, redis) | You | 🟨 (api+web+redis done; chroma lands with Phase 3 RAG) |
 | `.env.example` + README run steps | Teammate | ⬜ |
 | Clean-machine run verification | Teammate (QA) | ⬜ |
 

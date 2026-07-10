@@ -181,7 +181,22 @@ The AIS data path from source to map has five hops, each instrumented with diagn
 
 **`BoundingBoxes` schema (confirmed):** AISStream requires triple nesting — a list of **one or more** boxes, each box being a list of exactly **two** `[lat, lon]` points: `[[[lat_min, lon_min], [lat_max, lon_max]], ...]`. The `[lat, lon]` point order was verified empirically (2026-07-05 diagnostic matrix: Dover in lat-lon streams instantly, axes-swapped gets nothing). `AISStreamClient._subscribe_payload()` asserts this shape and raises loudly before sending if it's ever malformed. The subscription is **multi-box** — all boxes in `backend/data/ais_boxes.json` go into one subscribe message, and every incoming frame is attributed to its containing box(es) in the per-box `CoverageMonitor` (`[AIS hop-b]` logs carry a `SENTINEL-MULTIBOX-20260705` image-freshness marker).
 
-**AIS coverage states:** a subscribed box with zero frames for a rolling 10-minute window reports `NO_TERRESTRIAL_COVERAGE` via `GET /coverage`; a corridor risk feature backed by an uncovered box is excluded from the risk sum (weights renormalized) and badged in the UI instead of reading a fake zero. This is by design: as of 2026-07-05 AISStream has **no receivers in the Persian Gulf or on the India west coast** — see the full evidence table in `docs/03`. Diagnostic scripts: `scripts/diag_aisstream.py` (subscription matrix, app must be down — single-session key) and `scripts/diag_relay.py` (asserts `/ws/vessels` delivers schema-correct vessels inside a subscribed box).
+**AIS coverage states:** a subscribed box with zero frames for a rolling window reports `NO_TERRESTRIAL_COVERAGE` via `GET /coverage`; a corridor risk feature backed by an uncovered box is excluded from the risk sum (weights renormalized) and badged in the UI instead of reading a fake zero. This is by design: as of 2026-07-05 AISStream has **no receivers in the Persian Gulf or on the India west coast** (see the full evidence in `docs/03`). Diagnostic scripts: `scripts/diag_aisstream.py` (subscription matrix, app must be down — single-session key) and `scripts/diag_relay.py`.
+
+### Phase 1 AIS Evidence (Live Feed Status)
+
+A core design principle of Lodestar is transparency around data limitations. AISStream's terrestrial-receiver model has a real, documented coverage gap in the Persian Gulf and along India's own coast. Rather than silently reporting zero vessels (which a black-box model might misinterpret as "no disruption" or "zero traffic"), Lodestar is architected to explicitly distinguish "no disruption detected" from "no visibility available." This is a critical, resilience-relevant distinction.
+
+When a coverage gap is detected, the density feature is explicitly flagged as `NO_TERRESTRIAL_COVERAGE`, clearly badged in the UI, and excluded from the math (weights renormalized) so it does not poison the risk score.
+
+To defend the platform's integrity on demo day and prove the pipeline is alive despite these gaps, we ran a controlled diagnostic matrix on the live feed:
+
+| Corridor / Region | Status | Evidence | Action |
+|---|---|---|---|
+| **Strait of Hormuz** | 🔴 `NO_TERRESTRIAL_COVERAGE` | 0 frames in 120s | Excluded from risk density math; badged in UI. System correctly identifies sensor gap. |
+| **India West Coast** | 🔴 `NO_TERRESTRIAL_COVERAGE` | 0 frames in 180s (no filter) | Confirms coverage void. Excluded from math; badged in UI. |
+| **Singapore Strait (Malacca)** | 🟢 `COVERED` | 44+ frames instantly | Secondary demo view to prove the pipeline is live and rendering moving vessels. |
+| **Dover Strait (Control)** | 🟢 `COVERED` | 50+ frames instantly | Positive control to verify the backend connector is perfectly healthy. |
 
 The AIS background task is pinned to `app.state.ais_task` (preventing GC) and has a `done_callback` that logs any unhandled exception. The receive loop wraps each message in try/except so one bad message cannot kill the entire loop.
 

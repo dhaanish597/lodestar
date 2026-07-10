@@ -1,0 +1,14 @@
+[     513ms] [LOG] [WS hop-e] Connecting to ws://localhost:8000/ws/vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[     752ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[     846ms] [LOG] [WS hop-e] ✓ WebSocket OPEN @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[     862ms] [LOG] [WS hop-e] ✓ FIRST message: 23 vessels   first=[1.259, 103.899] @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[   18537ms] [LOG] [WS hop-e] Message #10: 28 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[   38545ms] [LOG] [WS hop-e] Message #20: 28 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[   58557ms] [LOG] [WS hop-e] Message #30: 29 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[   78562ms] [LOG] [WS hop-e] Message #40: 32 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[   98572ms] [LOG] [WS hop-e] Message #50: 32 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[  118582ms] [LOG] [WS hop-e] Message #60: 34 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[  138591ms] [LOG] [WS hop-e] Message #70: 36 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[  158599ms] [LOG] [WS hop-e] Message #80: 36 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[  178605ms] [LOG] [WS hop-e] Message #90: 38 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0
+[  198616ms] [LOG] [WS hop-e] Message #100: 38 vessels @ http://localhost:3000/_next/static/chunks/app/page-4a489054e23b832f.js:0

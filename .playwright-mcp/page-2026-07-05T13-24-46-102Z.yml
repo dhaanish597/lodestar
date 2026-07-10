@@ -1,0 +1,39 @@
+- main [ref=e2]:
+  - complementary [ref=e8]:
+    - generic [ref=e9]: Loading corridor risk…
+    - generic [ref=e10]:
+      - heading "Scenario — macro cascade" [level=2] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: Disruption
+          - generic [ref=e15]: "0.30"
+        - slider [ref=e16]: "0.3"
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Substitution rate
+          - generic [ref=e20]: "0.20"
+        - slider [ref=e21]: "0.2"
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Hormuz share of imports
+          - generic [ref=e25]: "0.45"
+        - slider [ref=e26]: "0.45"
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: SPR fill
+          - generic [ref=e30]: "0.64"
+        - slider [ref=e31]: "0.64"
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]: CPI sensitivity
+          - generic [ref=e35]: "0.35"
+        - slider [ref=e36]: "0.35"
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: CAD sensitivity
+          - generic [ref=e40]: "0.35"
+        - slider [ref=e41]: "0.35"
+      - generic [ref=e42]: Loading cascade…
+    - generic [ref=e43]:
+      - heading "Ranked reroute options" [level=2] [ref=e44]
+      - list

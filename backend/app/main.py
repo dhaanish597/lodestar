@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.ingestion.aisstream import AISStreamClient, VesselStore
 from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
+from app.ingestion.gdelt import gdelt_poller
 from app.ingestion.prices import PriceService
 
 logger = logging.getLogger(__name__)
@@ -91,14 +92,18 @@ async def lifespan(app: FastAPI):
     # ---- Pin the task on app.state so it is never GC'd ----
     app.state.ais_task = asyncio.create_task(ais_client.run(), name="ais-stream")
     app.state.ais_task.add_done_callback(_log_task_result)
+    
+    app.state.gdelt_task = asyncio.create_task(gdelt_poller(app.state.http_client), name="gdelt-poller")
+    
     logger.info("[STARTUP] AIS background task scheduled (id=%s)", app.state.ais_task.get_name())
 
     yield
 
     app.state.ais_task.cancel()
+    app.state.gdelt_task.cancel()
     try:
-        await app.state.ais_task
-    except asyncio.CancelledError:
+        await asyncio.gather(app.state.ais_task, app.state.gdelt_task, return_exceptions=True)
+    except Exception:
         pass
     await app.state.http_client.aclose()
 

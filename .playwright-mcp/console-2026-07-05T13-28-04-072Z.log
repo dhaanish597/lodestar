@@ -1,0 +1,7 @@
+[     513ms] [LOG] [WS hop-e] Connecting to ws://localhost:8000/ws/vessels @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[     632ms] [LOG] [WS hop-e] ✓ WebSocket OPEN @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[     659ms] [LOG] [WS hop-e] ✓ FIRST message: 38 vessels   first=[1.259, 103.899] @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[   18541ms] [LOG] [WS hop-e] Message #10: 41 vessels @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[   38550ms] [LOG] [WS hop-e] Message #20: 42 vessels @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[   58561ms] [LOG] [WS hop-e] Message #30: 43 vessels @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0
+[   78573ms] [LOG] [WS hop-e] Message #40: 45 vessels @ http://localhost:3000/_next/static/chunks/app/page-11d54c74d14c8220.js:0

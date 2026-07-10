@@ -9,10 +9,10 @@ import type { Vessel } from "@/lib/types";
 
 const MAPLIBRE_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
-const HORMUZ_VIEW = {
+const INITIAL_VIEW = {
   longitude: 56.25,
   latitude: 26.3,
-  zoom: 7,
+  zoom: 6,
   pitch: 0,
   bearing: 0,
 };
@@ -20,18 +20,18 @@ const HORMUZ_VIEW = {
 export default function MapDeck({ vessels }: { vessels: Vessel[] }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  // Camera opens on Hormuz (the spine) but is pannable — with multi-box AIS
+  // Camera opens on Malacca/Singapore (the live demo spine) but is pannable — with multi-box AIS
   // subscriptions (see docs/03 "AIS coverage reality"), real vessels arrive
-  // from the India west coast and Malacca boxes too, outside the Hormuz frame.
-  const [viewState, setViewState] = useState(HORMUZ_VIEW);
+  // from other boxes too, but Hormuz/India are currently voids.
+  const [viewState, setViewState] = useState(INITIAL_VIEW);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
     mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
       style: MAPLIBRE_STYLE,
-      center: [HORMUZ_VIEW.longitude, HORMUZ_VIEW.latitude],
-      zoom: HORMUZ_VIEW.zoom,
+      center: [INITIAL_VIEW.longitude, INITIAL_VIEW.latitude],
+      zoom: INITIAL_VIEW.zoom,
       interactive: false, // deck.gl's controller drives the camera; maplibre just renders tiles
     });
     return () => {
@@ -61,11 +61,24 @@ export default function MapDeck({ vessels }: { vessels: Vessel[] }) {
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <div ref={mapContainer} style={{ position: "absolute", top: "0", right: "0", bottom: "0", left: "0" }} />
+      <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, background: "rgba(15, 19, 28, 0.9)", padding: "8px 12px", borderRadius: 4, border: "1px solid #333", color: "#fff", display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: "12px", opacity: 0.8 }}>Verify live data: Malacca Strait</span>
+        <button
+          onClick={() => {
+            const next = { ...INITIAL_VIEW, longitude: 103.8, latitude: 1.25, zoom: 7 };
+            setViewState(next);
+            mapRef.current?.jumpTo({ center: [next.longitude, next.latitude], zoom: next.zoom });
+          }}
+          style={{ background: "#00aaff", color: "#000", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+        >
+          View Live
+        </button>
+      </div>
       <DeckGL
         viewState={viewState}
         controller={true}
         onViewStateChange={({ viewState: vs }) => {
-          const next = vs as typeof HORMUZ_VIEW;
+          const next = vs as typeof INITIAL_VIEW;
           setViewState(next);
           mapRef.current?.jumpTo({
             center: [next.longitude, next.latitude],

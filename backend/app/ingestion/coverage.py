@@ -21,11 +21,8 @@ pattern as ``STUB`` features), and the UI badge says so out loud.
 """
 from datetime import datetime, timedelta, timezone
 
-# ASSUMPTION -> docs/04 §A: empirical floor. In the 2026-07-05 diagnostic matrix
-# (scripts/diag_aisstream.py), every box with any coverage produced its first
-# frame in <1s; Hormuz produced zero frames in 5+ minutes across repeated runs.
-# 10 minutes of silence is therefore a conservative "no receivers here" signal.
-COVERAGE_WINDOW_SECONDS = 600
+# 15 seconds for live demo purposes to quickly show NO_TERRESTRIAL_COVERAGE
+COVERAGE_WINDOW_SECONDS = 15
 
 COVERED = "COVERED"
 WARMING_UP = "WARMING_UP"

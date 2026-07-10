@@ -46,7 +46,7 @@ async def get_risk(corridor: str, request: Request) -> RiskScore:
         # coverage void would poison the anomaly detector's mean.
         density_tracker.sample(vessel_count)
 
-    x_kinetic = await fetch_kinetic_volume(http_client)
+    x_kinetic = await fetch_kinetic_volume(http_client, corridor=corridor)
     x_density = density_tracker.x_density()
 
     return compute_risk(
