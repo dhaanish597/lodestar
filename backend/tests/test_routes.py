@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.ingestion.aisstream import VesselStore
 from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
+from app.ingestion.freight import FreightService
 from app.ingestion.prices import PriceService
 from app.main import app
 
@@ -117,6 +118,9 @@ def test_risk_hormuz_weather_and_freight_are_live_not_stub():
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.coverage_monitor = _fresh_coverage_monitor()
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+    # Use a deterministic test key so this test's outcome is independent of
+    # whatever FRED_API_KEY (if any) happens to be set in a local .env.
+    app.state.freight_service = FreightService(fred_api_key="test-key")
 
     with TestClient(app) as client:
         resp = client.get("/risk/hormuz")
