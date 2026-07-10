@@ -7,9 +7,9 @@ import type { RiskScore } from "@/lib/types";
 const FEATURE_LABELS: Record<string, string> = {
   kinetic: "Kinetic news (GDELT)",
   density: "Vessel density anomaly (AIS)",
-  sanctions: "Sanctions exposure — STUB",
-  weather: "Sea state — STUB",
-  freight: "Freight stress — STUB",
+  sanctions: "Sanctions exposure (OpenSanctions)",
+  weather: "Sea state (Open-Meteo)",
+  freight: "Freight stress (FRED)",
 };
 
 export default function RiskPanel({ apiUrl }: { apiUrl: string }) {
@@ -65,7 +65,10 @@ export default function RiskPanel({ apiUrl }: { apiUrl: string }) {
           const excluded = state === "NO_TERRESTRIAL_COVERAGE" || state === "WARMING_UP";
           return (
             <div key={feature} style={{ marginBottom: 6 }}>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>{FEATURE_LABELS[feature] ?? feature}</div>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                {FEATURE_LABELS[feature] ?? feature}
+                {state === "STUB" ? " — STUB" : ""}
+              </div>
               {excluded ? (
                 <div
                   style={{
