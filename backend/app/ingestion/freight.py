@@ -33,6 +33,10 @@ N_BASELINE_MONTHS = 3
 # freight stress (X_freight=1.0).
 FREIGHT_STRESS_SCALE_PCT = 15.0
 
+# ASSUMPTION -> cache TTL, not a modeling constant. The underlying FRED
+# series is monthly, so an hour of staleness is immaterial; this just
+# bounds how often the risk endpoint's 10s frontend poll triggers a real
+# FRED request.
 FREIGHT_CACHE_TTL_SECONDS = 3600.0
 
 

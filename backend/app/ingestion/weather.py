@@ -18,9 +18,10 @@ OPEN_METEO_MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 # is flagged as disruption-relevant (X_weather=1); below it, X_weather=0.
 WAVE_HEIGHT_THRESHOLD_M = 4.0
 
-# The frontend polls /risk/{corridor} every 10s (RiskPanel.tsx). Without a
-# TTL that's one real Open-Meteo call per poll. Hourly forecast data doesn't
-# change meaningfully faster than this window.
+# ASSUMPTION -> cache TTL, not a modeling constant. The frontend polls
+# /risk/{corridor} every 10s (RiskPanel.tsx). Without a TTL that's one real
+# Open-Meteo call per poll. Hourly forecast data doesn't change meaningfully
+# faster than this window.
 WEATHER_CACHE_TTL_SECONDS = 1800.0
 
 
