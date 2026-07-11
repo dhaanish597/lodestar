@@ -84,8 +84,13 @@ class FreightCache:
                 FREIGHT_SERIES_ID, latest, baseline, pct_deviation, self._value,
             )
             return self._value
+        except httpx.HTTPStatusError as exc:
+            # Don't interpolate the raw exception -- its str() embeds the
+            # full request URL, which includes api_key=<the real FRED key>.
+            logger.warning("[FRED] HTTP %d — serving cached %.3f", exc.response.status_code, self._value)
+            return self._value
         except Exception as exc:
-            logger.warning("[FRED] Fetch failed: %s — serving cached %.3f", exc, self._value)
+            logger.warning("[FRED] Fetch failed: %s — serving cached %.3f", type(exc).__name__, self._value)
             return self._value
 
 
@@ -97,3 +102,11 @@ class FreightService:
 
     async def get_x_freight(self, client: httpx.AsyncClient) -> float:
         return await self._cache.get(client)
+
+    @property
+    def has_key(self) -> bool:
+        """Whether this instance actually has a FRED API key -- used by the
+        route layer to label feature_states LIVE vs STUB without touching
+        Settings directly (tests inject FreightService with an explicit key,
+        bypassing Settings entirely; see docs/03 Task 3 / commit 20ca6d5)."""
+        return bool(self._cache.api_key)

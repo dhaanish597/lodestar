@@ -87,7 +87,7 @@ FRED_API_KEY=             # free, https://fred.stlouisfed.org/docs/api/
 ## 7. FRED — freight / war-risk proxy (key, free)
 - **Base:** `https://api.stlouisfed.org/fred/series/observations`
 - **Use:** Baltic Clean Tanker Index (BCTI) / Baltic Dry Index (BDI) as systemic shipping-stress proxy. `X_freight = pct_deviation(current, 90d_baseline)`.
-- If a clean BCTI series ID isn't retrievable on free tier → `STUB →` static 90-day series + TODO.
+- BCTI/BDI confirmed unavailable on FRED (verified 2026-07-10) — rather than falling back to a static-stub series, a live substitute series was wired in instead. See the implementation note below for detail.
 - **Implementation note:** `backend/app/ingestion/freight.py` confirmed live, 2026-07-10, via a direct query against FRED's series-search API that neither BCTI nor BDI exists as a FRED series — the Baltic Exchange doesn't license them to FRED. The connector substitutes `FREIGHT_SERIES_ID = "WPU301301"` ("Producer Price Index by Commodity: Transportation Services: Deep Sea Water Transportation of Freight", monthly, BLS via FRED), verified reachable with real data through 2026-05, as the nearest defensible live proxy for systemic ocean-freight cost. Because the series is monthly rather than daily, `N_BASELINE_MONTHS = 3` adapts this doc's literal "90-day baseline" language to "the 3 monthly prints preceding the latest one." `FREIGHT_STRESS_SCALE_PCT = 15.0` maps the resulting pct deviation from baseline onto the risk engine's `[0,1]` feature convention (a ≥15% deviation reads as full freight stress, `X_freight = 1.0`). `FreightCache` carries a 3600s (1-hour) TTL.
 
 ## 8. Port congestion — Portcast / Safecube (paywalled)
@@ -110,7 +110,7 @@ Hormuz is the demo spine. Bab-el-Mandeb + Malacca are "breadth = future work" �
 | `X_density` | AISStream | 1 if tanker count drops ≥ Nσ below 30-day MA |
 | `X_sanctions` | OpenSanctions | flagged / observed fleet |
 | `X_weather` | Open-Meteo | 1 if wave_height_max ≥ 4.0 m |
-| `X_freight` | FRED (BCTI) / Alpha Vantage | % deviation vs 90-day baseline |
+| `X_freight` | FRED (WPU301301, substitutes unavailable BCTI/BDI) | % deviation vs 90-day baseline |
 
 **Implementation note (`X_density`):** Phase 1 substitutes a short in-memory rolling window (`DensityTracker`, `backend/app/ingestion/density.py`, default 20 samples) for the 30-day MA baseline above — a live demo can't accumulate 30 days of history. `ASSUMPTION`, revisit if a persistent store is added. Cross-referenced in `04_model_assumptions_and_constants.md` §A.
 

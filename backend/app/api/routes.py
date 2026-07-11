@@ -60,7 +60,11 @@ async def get_risk(corridor: str, request: Request) -> RiskScore:
         x_density=x_density,
         x_weather=x_weather,
         x_freight=x_freight,
-        feature_states={"density": density_state, "weather": "LIVE", "freight": "LIVE"},
+        feature_states={
+            "density": density_state,
+            "weather": "LIVE",
+            "freight": "LIVE" if freight_service.has_key else "STUB",
+        },
     )
 
 

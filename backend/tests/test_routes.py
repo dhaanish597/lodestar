@@ -20,7 +20,7 @@ def _fresh_coverage_monitor() -> CoverageMonitor:
     return CoverageMonitor(list(get_settings().ais_boxes))
 
 
-def test_risk_hormuz_returns_full_breakdown(monkeypatch):
+def test_risk_hormuz_returns_full_breakdown():
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.coverage_monitor = _fresh_coverage_monitor()
@@ -134,6 +134,24 @@ def test_risk_hormuz_weather_and_freight_are_live_not_stub():
     assert body["contributions"]["weather"] > 0.0
     # mocked FRED: latest 130 vs baseline avg 100 -> +30% deviation -> clipped to 1.0
     assert body["features"]["freight"] == pytest.approx(1.0)
+
+
+def test_risk_hormuz_freight_degrades_to_stub_when_no_key():
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+    # Explicit empty key, independent of whatever FRED_API_KEY (if any) is set
+    # in a local .env -- proves the route derives feature_states from the
+    # FreightService instance's own has_key, not from Settings directly.
+    app.state.freight_service = FreightService(fred_api_key="")
+
+    with TestClient(app) as client:
+        resp = client.get("/risk/hormuz")
+
+    body = resp.json()
+    assert body["feature_states"]["freight"] == "STUB"
+    assert body["features"]["freight"] == 0.0
 
 
 def _app_with_mocks() -> None:

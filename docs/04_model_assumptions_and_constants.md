@@ -19,7 +19,7 @@ P(c,t) = sigmoid( β0 + Σ wi · Xi )
 | `X_density` (AIS anomaly) | **0.25** | Physical evidence of rerouting / refusal to transit. |
 | `X_sanctions` (OFAC/EU) | **0.15** | Structural off-take barrier (Rosneft/Lukoil wind-down stranded volumes). |
 | `X_weather` (Open-Meteo) | **0.10** | Transit delays, anchorage, port-approach congestion. |
-| `X_freight` (BCTI) | **0.10** | Systemic tonnage-stress proxy. |
+| `X_freight` (FRED WPU301301) | **0.10** | Systemic tonnage-stress proxy. |
 
 - **Explainability requirement:** the UI must show the per-feature contribution `wi·Xi` as a stacked bar, not just the final %. This is the single biggest "is it real" credibility win.
 - **Phase 1 implementation status:** `X_kinetic`, `X_density`, `X_weather`, `X_freight` are live; `X_sanctions` remains `STUB → 0.0` — `OPENSANCTIONS_API_KEY` is not configured (Phase 2). See `backend/app/engine/risk.py`.
