@@ -1,13 +1,15 @@
 # backend/app/api/routes.py
 from fastapi import APIRouter, HTTPException, Request
 
+from app.agents.deps import AgentDeps
+from app.agents.runner import AGENT_MODE, run_agents
 from app.config import get_settings
 from app.engine.reroute import rank_reroutes
 from app.engine.risk import compute_risk
 from app.engine.scenario import compute_scenario
 from app.ingestion.gdelt import fetch_kinetic_volume
 from app.ingestion.logistics_reading import compute_logistics_reading
-from app.models import RerouteOption, RiskScore, Scenario
+from app.models import AgentRecommendation, RerouteOption, RiskScore, Scenario
 
 router = APIRouter()
 
@@ -106,3 +108,46 @@ async def get_reroute(
 
     grades = get_settings().crude_grades
     return rank_reroutes(disruption_factor=disruption_factor, brent_price_usd_bbl=brent_price, grades=grades)
+
+
+@router.get("/recommendation/{corridor}", response_model=AgentRecommendation)
+async def get_recommendation(
+    corridor: str,
+    request: Request,
+    disruption_factor: float = 0.30,
+    substitution_rate: float = 0.20,
+    hormuz_share: float = 0.45,
+) -> AgentRecommendation:
+    if corridor not in SUPPORTED_CORRIDORS:
+        raise HTTPException(status_code=404, detail=f"corridor '{corridor}' not wired in Phase 1")
+
+    settings = get_settings()
+    deps = AgentDeps(
+        http_client=request.app.state.http_client,
+        settings=settings,
+        vessel_store=request.app.state.vessel_store,
+        density_tracker=request.app.state.density_tracker,
+        coverage_monitor=request.app.state.coverage_monitor,
+        weather_service=request.app.state.weather_service,
+        sanctions_service=request.app.state.sanctions_service,
+        freight_service=request.app.state.freight_service,
+        price_service=request.app.state.price_service,
+        llm=request.app.state.llm_client,
+    )
+    final_state = await run_agents(deps, corridor, disruption_factor, substitution_rate, hormuz_share)
+
+    return AgentRecommendation(
+        corridor=corridor,
+        risk=RiskScore(**final_state["risk"]),
+        scenario=Scenario(**final_state["scenario"]),
+        reroutes=[RerouteOption(**r) for r in final_state["reroutes"]],
+        market_volatility_label=final_state["market_volatility_label"],
+        price_spike_detected=final_state["price_spike_detected"],
+        market_narration=final_state["market_narration"],
+        density_state=final_state["density_state"],
+        sanctions_state=final_state["sanctions_state"],
+        logistics_narration=final_state["logistics_narration"],
+        macro_narration=final_state["macro_narration"],
+        recommendation_narration=final_state["recommendation_narration"],
+        agent_mode=AGENT_MODE,
+    )

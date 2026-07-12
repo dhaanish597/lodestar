@@ -63,3 +63,19 @@ class RerouteOption(BaseModel):
     congestion_penalty: float
     score: float
     best_fit_refineries: list[str]
+
+
+class AgentRecommendation(BaseModel):
+    corridor: str
+    risk: RiskScore
+    scenario: Scenario
+    reroutes: list[RerouteOption]
+    market_volatility_label: str
+    price_spike_detected: bool
+    market_narration: str
+    density_state: str
+    sanctions_state: str
+    logistics_narration: str
+    macro_narration: str
+    recommendation_narration: str
+    agent_mode: str  # "graph" | "sequential" -- whichever actually ran
