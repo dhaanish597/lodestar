@@ -7,6 +7,7 @@ under the cap, and never triggered directly by a page load. EIA spot prices
 publish weekly (~Tuesdays) per docs/02 §2, so it serves as the fallback
 baseline when Alpha Vantage is unset or unreachable.
 """
+import asyncio
 import logging
 import time
 
@@ -31,6 +32,7 @@ class EiaCache:
         self.ttl = ttl
         self._value: float | None = None
         self._last_fetch: float = 0.0
+        self._lock = asyncio.Lock()
 
     async def get(self, client: httpx.AsyncClient) -> float | None:
         if not self.api_key:
@@ -40,32 +42,39 @@ class EiaCache:
         if now - self._last_fetch < self.ttl and self._value is not None:
             return self._value
 
-        try:
-            response = await client.get(
-                EIA_URL,
-                params={
-                    "api_key": self.api_key,
-                    "frequency": "daily",
-                    "data[]": "value",
-                    "facets[series][]": "DCOILBRENTEU",
-                    "sort[0][column]": "period",
-                    "sort[0][direction]": "desc",
-                    "length": 5,
-                },
-            )
-            response.raise_for_status()
-            rows = response.json()["response"]["data"]
-            if not rows:
-                logger.debug("[EIA] Empty data array, serving cached %s", self._value)
+        async with self._lock:
+            # Re-check inside the lock: another coroutine may have already
+            # refreshed the cache while this one was waiting.
+            now = time.monotonic()
+            if now - self._last_fetch < self.ttl and self._value is not None:
                 return self._value
 
-            self._value = float(rows[0]["value"])
-            self._last_fetch = now
-            logger.info("[EIA] Fetched Brent baseline: %.2f", self._value)
-            return self._value
-        except Exception as exc:
-            logger.warning("[EIA] Fetch failed: %s — serving cached %s", exc, self._value)
-            return self._value
+            try:
+                response = await client.get(
+                    EIA_URL,
+                    params={
+                        "api_key": self.api_key,
+                        "frequency": "daily",
+                        "data[]": "value",
+                        "facets[series][]": "DCOILBRENTEU",
+                        "sort[0][column]": "period",
+                        "sort[0][direction]": "desc",
+                        "length": 5,
+                    },
+                )
+                response.raise_for_status()
+                rows = response.json()["response"]["data"]
+                if not rows:
+                    logger.debug("[EIA] Empty data array, serving cached %s", self._value)
+                    return self._value
+
+                self._value = float(rows[0]["value"])
+                self._last_fetch = now
+                logger.info("[EIA] Fetched Brent baseline: %.2f", self._value)
+                return self._value
+            except Exception as exc:
+                logger.warning("[EIA] Fetch failed: %s — serving cached %s", exc, self._value)
+                return self._value
 
 
 class AlphaVantageCache:
@@ -76,6 +85,7 @@ class AlphaVantageCache:
         self.ttl = ttl
         self._value: float | None = None
         self._last_fetch: float = 0.0
+        self._lock = asyncio.Lock()
 
     async def get(self, client: httpx.AsyncClient) -> float | None:
         if not self.api_key:
@@ -85,24 +95,31 @@ class AlphaVantageCache:
         if now - self._last_fetch < self.ttl and self._value is not None:
             return self._value
 
-        try:
-            response = await client.get(
-                ALPHAVANTAGE_URL,
-                params={"function": "BRENT", "interval": "daily", "apikey": self.api_key},
-            )
-            response.raise_for_status()
-            rows = response.json().get("data", [])
-            if not rows:
-                logger.debug("[AlphaVantage] Empty data array, serving cached %s", self._value)
+        async with self._lock:
+            # Re-check inside the lock: another coroutine may have already
+            # refreshed the cache while this one was waiting.
+            now = time.monotonic()
+            if now - self._last_fetch < self.ttl and self._value is not None:
                 return self._value
 
-            self._value = float(rows[0]["value"])
-            self._last_fetch = now
-            logger.info("[AlphaVantage] Fetched Brent intraday: %.2f", self._value)
-            return self._value
-        except Exception as exc:
-            logger.warning("[AlphaVantage] Fetch failed: %s — serving cached %s", exc, self._value)
-            return self._value
+            try:
+                response = await client.get(
+                    ALPHAVANTAGE_URL,
+                    params={"function": "BRENT", "interval": "daily", "apikey": self.api_key},
+                )
+                response.raise_for_status()
+                rows = response.json().get("data", [])
+                if not rows:
+                    logger.debug("[AlphaVantage] Empty data array, serving cached %s", self._value)
+                    return self._value
+
+                self._value = float(rows[0]["value"])
+                self._last_fetch = now
+                logger.info("[AlphaVantage] Fetched Brent intraday: %.2f", self._value)
+                return self._value
+            except Exception as exc:
+                logger.warning("[AlphaVantage] Fetch failed: %s — serving cached %s", exc, self._value)
+                return self._value
 
 
 class PriceService:
