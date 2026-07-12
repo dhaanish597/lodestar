@@ -59,7 +59,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Risk feature coverage states (`feature_states`, weight renormalization on `NO_TERRESTRIAL_COVERAGE`/`WARMING_UP`) + UI badge | You | Innov/Tech | ✅ |
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4; concurrency-safety verified 2026-07-12 — a live 8-concurrent-request test found the TTL cache was **not** race-safe [8 concurrent requests → 8 real Alpha Vantage calls], fixed with `asyncio.Lock` double-checked locking, re-verified live at 1 real call per burst) |
-| Open-Meteo + FRED connectors | Teammate | Scale | ✅ (live — Open-Meteo Marine wave height; FRED WPU301301 substitutes unavailable BCTI/BDI, docs/02 §7) |
+| Open-Meteo + FRED connectors | Teammate | Scale | ✅ (live — Open-Meteo Marine wave height; FRED WPU301301 substitutes unavailable BCTI/BDI, docs/02 §7; concurrency-safety fixed 2026-07-12 — both `WeatherCache` and `FreightCache` had the same check-then-fetch-then-set race found in `PriceService`'s caches, closed with the identical `asyncio.Lock` double-checked-locking pattern, docs/02 §6–7) |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
 | Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic/density/weather/freight live; sanctions stubbed — OPENSANCTIONS_API_KEY not configured) |
 | Scenario cascade engine (5 steps, all sliders) | You | Business | ✅ (engine done Task 2; `GET /scenario/{corridor}` wired live Task 4) |
@@ -76,7 +76,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
 | Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ✅ |
 | Scenario sliders + live cascade readout | You | Business/UX | ✅ (live via Tasks 6 and 8 — `ScenarioCard` has 6 live sliders wired to `/scenario/hormuz`, debounced 250ms) |
-| Reroute ranked-list card (executable plan) | You | Business | ✅ (now live via Tasks 7 and 8 — `RerouteCard` fetches `/reroute/hormuz`, MCDM-ranked, debounced 250ms; scores/values confirmed live-recomputing on every `disruption_factor` change, verified 2026-07-12 against the real running API — **but** the *position order* of the current 6-grade set does not flip anywhere across the full `disruption_factor` domain [checked 0.0 and 1.0 directly]: cost dominates the MCDM score enough that Urals/Bonny Light/Merey/WTI/Liza/Mars keep a stable relative order, only the score gaps narrow/widen. See docs/04 §C.) |
+| Reroute ranked-list card (executable plan) | You | Business | ✅ (`RerouteCard` fetches `/reroute/hormuz`, MCDM-ranked, debounced 250ms; now renders each option's live score as a numeric value + Δ-to-leader + proportional bar, not just final order, so the score-gap dynamic is visible on screen as the slider moves. A 201-point sweep of the full `disruption_factor` domain [verified 2026-07-12 against the real running API] found zero rank flips — Urals/Bonny Light/Merey/WTI/Liza/Mars keep a stable relative order at every point; `substitution_rate`/`hormuz_share` confirmed to have zero effect on this endpoint [not consumed by `rank_reroutes()` — macro-cascade-only params]. See docs/04 §C.) |
 | Latency badge (signal→recommendation) | You | Business | ⬜ |
 | Refinery + SPR markers | Teammate | UX | ⬜ |
 

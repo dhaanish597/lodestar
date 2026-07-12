@@ -10,6 +10,7 @@ This is a LIVE connector on a real substitute series, not the static-stub
 fallback docs/02 §7 sanctions for a genuinely unreachable feed -- flagged
 here because it substitutes the specifically-named series.
 """
+import asyncio
 import logging
 import time
 
@@ -46,6 +47,7 @@ class FreightCache:
         self.ttl = ttl
         self._value: float = 0.0
         self._last_fetch: float = 0.0
+        self._lock = asyncio.Lock()
 
     async def get(self, client: httpx.AsyncClient) -> float:
         if not self.api_key:
@@ -55,43 +57,50 @@ class FreightCache:
         if self._last_fetch > 0 and now - self._last_fetch < self.ttl:
             return self._value
 
-        try:
-            response = await client.get(
-                FRED_URL,
-                params={
-                    "series_id": FREIGHT_SERIES_ID,
-                    "api_key": self.api_key,
-                    "file_type": "json",
-                    "sort_order": "desc",
-                    "limit": N_BASELINE_MONTHS + 1,
-                },
-            )
-            response.raise_for_status()
-            observations = response.json().get("observations", [])
-            values = [float(o["value"]) for o in observations if o.get("value") not in (None, ".")]
-            if len(values) < 2:
-                logger.debug("[FRED] Not enough observations, serving cached %.3f", self._value)
+        async with self._lock:
+            # Re-check inside the lock: another coroutine may have already
+            # refreshed the cache while this one was waiting.
+            now = time.monotonic()
+            if self._last_fetch > 0 and now - self._last_fetch < self.ttl:
                 return self._value
 
-            latest, baseline_points = values[0], values[1:]
-            baseline = sum(baseline_points) / len(baseline_points)
-            pct_deviation = ((latest - baseline) / baseline) * 100 if baseline else 0.0
+            try:
+                response = await client.get(
+                    FRED_URL,
+                    params={
+                        "series_id": FREIGHT_SERIES_ID,
+                        "api_key": self.api_key,
+                        "file_type": "json",
+                        "sort_order": "desc",
+                        "limit": N_BASELINE_MONTHS + 1,
+                    },
+                )
+                response.raise_for_status()
+                observations = response.json().get("observations", [])
+                values = [float(o["value"]) for o in observations if o.get("value") not in (None, ".")]
+                if len(values) < 2:
+                    logger.debug("[FRED] Not enough observations, serving cached %.3f", self._value)
+                    return self._value
 
-            self._value = max(0.0, min(1.0, abs(pct_deviation) / FREIGHT_STRESS_SCALE_PCT))
-            self._last_fetch = now
-            logger.info(
-                "[FRED] %s latest=%.2f baseline=%.2f deviation=%.1f%% -> X_freight=%.3f",
-                FREIGHT_SERIES_ID, latest, baseline, pct_deviation, self._value,
-            )
-            return self._value
-        except httpx.HTTPStatusError as exc:
-            # Don't interpolate the raw exception -- its str() embeds the
-            # full request URL, which includes api_key=<the real FRED key>.
-            logger.warning("[FRED] HTTP %d — serving cached %.3f", exc.response.status_code, self._value)
-            return self._value
-        except Exception as exc:
-            logger.warning("[FRED] Fetch failed: %s — serving cached %.3f", type(exc).__name__, self._value)
-            return self._value
+                latest, baseline_points = values[0], values[1:]
+                baseline = sum(baseline_points) / len(baseline_points)
+                pct_deviation = ((latest - baseline) / baseline) * 100 if baseline else 0.0
+
+                self._value = max(0.0, min(1.0, abs(pct_deviation) / FREIGHT_STRESS_SCALE_PCT))
+                self._last_fetch = now
+                logger.info(
+                    "[FRED] %s latest=%.2f baseline=%.2f deviation=%.1f%% -> X_freight=%.3f",
+                    FREIGHT_SERIES_ID, latest, baseline, pct_deviation, self._value,
+                )
+                return self._value
+            except httpx.HTTPStatusError as exc:
+                # Don't interpolate the raw exception -- its str() embeds the
+                # full request URL, which includes api_key=<the real FRED key>.
+                logger.warning("[FRED] HTTP %d — serving cached %.3f", exc.response.status_code, self._value)
+                return self._value
+            except Exception as exc:
+                logger.warning("[FRED] Fetch failed: %s — serving cached %.3f", type(exc).__name__, self._value)
+                return self._value
 
 
 class FreightService:

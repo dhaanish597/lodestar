@@ -1331,7 +1331,7 @@ Drag the Disruption slider from ~0.1 to ~0.9. Confirm:
 - A new `GET /scenario/hormuz?disruption_factor=...` fires ~250ms after the drag settles (not on every pixel — debounced).
 - The Scenario panel numbers change (`Supply gap`, `Crude price rise`, `CPI impact`, `GDP drag`, `CAD widening` all move).
 - A new `GET /reroute/hormuz?disruption_factor=...` fires in the same window.
-- The Reroute panel's ranked list re-sorts (compare the order of grades at disruption≈0.1 vs disruption≈0.9 — `Merey`'s relative position should shift due to its longer voyage/congestion exposure, per `test_higher_disruption_changes_the_score_gap_between_grades`).
+- The Reroute panel's scores recompute (compare the values at disruption≈0.1 vs disruption≈0.9 — `Merey`'s score gap to the leader should narrow due to its longer voyage/congestion exposure, per `test_higher_disruption_changes_the_score_gap_between_grades`). **Correction (2026-07-12, verified live against a 201-point sweep of the full domain, docs/04 §C):** the ranked *order* does not flip anywhere in `[0.0, 1.0]` for the current 6-grade set — cost dominates the MCDM formula enough that only the score gaps move, not the positions. Don't expect or demo a visible reorder.
 
 - [ ] **Step 5: Confirm `grade_match` is a hard input, not computed**
 

@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 
@@ -84,3 +86,22 @@ async def test_service_caches_per_corridor_independently():
 
     assert hormuz == 1.0
     assert other == 0.0
+
+
+@pytest.mark.asyncio
+async def test_cache_concurrent_requests_on_cold_cache_dedupe_to_one_fetch():
+    call_count = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        await asyncio.sleep(0.05)  # widen the race window so a real bug reliably reproduces
+        return httpx.Response(200, json=ROUGH_RESPONSE)
+
+    cache = WeatherCache(latitude=26.3, longitude=56.3, ttl=3600.0)
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        results = await asyncio.gather(*[cache.get(client) for _ in range(10)])
+
+    assert call_count == 1
+    assert all(r == 1.0 for r in results)

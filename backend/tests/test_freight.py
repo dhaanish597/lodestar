@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 
@@ -99,3 +101,23 @@ async def test_service_wraps_cache():
         value = await service.get_x_freight(client)
 
     assert value == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.asyncio
+async def test_cache_concurrent_requests_on_cold_cache_dedupe_to_one_fetch():
+    call_count = 0
+    payload = _fred_response([107.5, 100.0, 100.0, 100.0])
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        await asyncio.sleep(0.05)  # widen the race window so a real bug reliably reproduces
+        return httpx.Response(200, json=payload)
+
+    cache = FreightCache(api_key="test-key", ttl=3600.0)
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        results = await asyncio.gather(*[cache.get(client) for _ in range(10)])
+
+    assert call_count == 1
+    assert all(r == pytest.approx(0.5, abs=1e-6) for r in results)
