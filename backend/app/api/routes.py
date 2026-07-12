@@ -6,6 +6,7 @@ from app.engine.reroute import rank_reroutes
 from app.engine.risk import compute_risk
 from app.engine.scenario import compute_scenario
 from app.ingestion.gdelt import fetch_kinetic_volume
+from app.ingestion.logistics_reading import compute_logistics_reading
 from app.models import RerouteOption, RiskScore, Scenario
 
 router = APIRouter()
@@ -19,49 +20,33 @@ async def get_risk(corridor: str, request: Request) -> RiskScore:
         raise HTTPException(status_code=404, detail=f"corridor '{corridor}' not wired in Phase 1")
 
     settings = get_settings()
-    store = request.app.state.vessel_store
-    density_tracker = request.app.state.density_tracker
-    coverage_monitor = request.app.state.coverage_monitor
     http_client = request.app.state.http_client
 
-    # Density is per-corridor: with multi-box AIS subscriptions the store holds
-    # vessels from every box, so count only those inside this corridor's bbox.
-    corridor_bbox = settings.corridors[corridor].bbox
-    vessel_count = len(store.snapshot_in_bbox(corridor_bbox))
+    reading = await compute_logistics_reading(
+        corridor=corridor,
+        http_client=http_client,
+        settings=settings,
+        vessel_store=request.app.state.vessel_store,
+        density_tracker=request.app.state.density_tracker,
+        coverage_monitor=request.app.state.coverage_monitor,
+        weather_service=request.app.state.weather_service,
+        sanctions_service=request.app.state.sanctions_service,
+    )
 
-    # Coverage state for the AIS box feeding this corridor. A box with zero
-    # frames for a full window means "no terrestrial receivers here" — the
-    # density feature is then excluded from the risk sum (weights renormalized)
-    # instead of silently reading 0. See docs/03 "AIS coverage reality".
-    density_state = "LIVE"
-    for box_name, box in settings.ais_boxes.items():
-        if box.corridor == corridor:
-            box_state = coverage_monitor.state(box_name)
-            if box_state != "COVERED":
-                density_state = box_state  # WARMING_UP or NO_TERRESTRIAL_COVERAGE
-            break
-
-    if density_state == "LIVE":
-        # Only feed the rolling baseline real readings — zeros caused by a
-        # coverage void would poison the anomaly detector's mean.
-        density_tracker.sample(vessel_count)
-
-    weather_service = request.app.state.weather_service
     freight_service = request.app.state.freight_service
-
     x_kinetic = await fetch_kinetic_volume(http_client, corridor=corridor)
-    x_density = density_tracker.x_density()
-    x_weather = await weather_service.get_x_weather(http_client, corridor=corridor, bbox=corridor_bbox)
     x_freight = await freight_service.get_x_freight(http_client)
 
     return compute_risk(
         corridor=corridor,
         x_kinetic=x_kinetic,
-        x_density=x_density,
-        x_weather=x_weather,
+        x_density=reading.x_density,
+        x_sanctions=reading.x_sanctions,
+        x_weather=reading.x_weather,
         x_freight=x_freight,
         feature_states={
-            "density": density_state,
+            "density": reading.density_state,
+            "sanctions": reading.sanctions_state,
             "weather": "LIVE",
             "freight": "LIVE" if freight_service.has_key else "STUB",
         },

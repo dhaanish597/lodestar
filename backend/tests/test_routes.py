@@ -11,7 +11,9 @@ from app.ingestion.coverage import CoverageMonitor
 from app.ingestion.density import DensityTracker
 from app.ingestion.freight import FreightService
 from app.ingestion.prices import PriceService
+from app.ingestion.sanctions import SanctionsService
 from app.main import app
+from app.models import Vessel
 
 GDELT_RESPONSE = {"timeline": [{"data": [{"date": "20260701", "value": 3}, {"date": "20260702", "value": 6}]}]}
 
@@ -25,6 +27,7 @@ def test_risk_hormuz_returns_full_breakdown():
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.coverage_monitor = _fresh_coverage_monitor()
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+    app.state.sanctions_service = SanctionsService(api_key="")
 
     with TestClient(app) as client:
         resp = client.get("/risk/hormuz")
@@ -43,6 +46,7 @@ def test_risk_hormuz_density_state_reflects_coverage(monkeypatch):
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.state.sanctions_service = SanctionsService(api_key="")
 
     # Fresh monitor with no subscription/frames → density must be WARMING_UP,
     # never a silent LIVE zero.
@@ -60,6 +64,7 @@ def test_risk_hormuz_density_state_reflects_coverage(monkeypatch):
     app.state.density_tracker = DensityTracker(min_samples=1)
     app.state.coverage_monitor = covered_monitor
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.state.sanctions_service = SanctionsService(api_key="")
     with TestClient(app) as client:
         live = client.get("/risk/hormuz").json()
     assert live["feature_states"]["density"] == "LIVE"
@@ -116,11 +121,15 @@ def _mock_handler(request: httpx.Request) -> httpx.Response:
 def test_risk_hormuz_weather_and_freight_are_live_not_stub():
     app.state.vessel_store = VesselStore()
     app.state.density_tracker = DensityTracker(min_samples=1)
-    app.state.coverage_monitor = _fresh_coverage_monitor()
+    covered_monitor = _fresh_coverage_monitor()
+    covered_monitor.mark_subscribed()
+    covered_monitor.mark_frame("hormuz")
+    app.state.coverage_monitor = covered_monitor
     app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
     # Use a deterministic test key so this test's outcome is independent of
     # whatever FRED_API_KEY (if any) happens to be set in a local .env.
     app.state.freight_service = FreightService(fred_api_key="test-key")
+    app.state.sanctions_service = SanctionsService(api_key="")
 
     with TestClient(app) as client:
         resp = client.get("/risk/hormuz")
@@ -128,7 +137,7 @@ def test_risk_hormuz_weather_and_freight_are_live_not_stub():
     body = resp.json()
     assert body["feature_states"]["weather"] == "LIVE"
     assert body["feature_states"]["freight"] == "LIVE"
-    assert body["feature_states"]["sanctions"] == "STUB"  # no OPENSANCTIONS_API_KEY
+    assert body["feature_states"]["sanctions"] == "STUB"  # covered AIS, but no OPENSANCTIONS_API_KEY
     # mocked wave_height max 4.5m >= 4.0m threshold -> X_weather=1 -> nonzero contribution
     assert body["features"]["weather"] == 1.0
     assert body["contributions"]["weather"] > 0.0
@@ -145,6 +154,7 @@ def test_risk_hormuz_freight_degrades_to_stub_when_no_key():
     # in a local .env -- proves the route derives feature_states from the
     # FreightService instance's own has_key, not from Settings directly.
     app.state.freight_service = FreightService(fred_api_key="")
+    app.state.sanctions_service = SanctionsService(api_key="")
 
     with TestClient(app) as client:
         resp = client.get("/risk/hormuz")
@@ -152,6 +162,59 @@ def test_risk_hormuz_freight_degrades_to_stub_when_no_key():
     body = resp.json()
     assert body["feature_states"]["freight"] == "STUB"
     assert body["features"]["freight"] == 0.0
+
+
+def test_risk_hormuz_sanctions_live_screens_observed_fleet():
+    store = VesselStore()
+    store.upsert(Vessel(mmsi=111, lat=26.3, lon=56.3, sog=5.0, timestamp=datetime.now(timezone.utc)))
+    store.upsert(Vessel(mmsi=222, lat=26.3, lon=56.3, sog=5.0, timestamp=datetime.now(timezone.utc)))
+    app.state.vessel_store = store
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    covered_monitor = _fresh_coverage_monitor()
+    covered_monitor.mark_subscribed()
+    covered_monitor.mark_frame("hormuz")
+    app.state.coverage_monitor = covered_monitor
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "opensanctions.org" in str(request.url):
+            import json
+            payload = json.loads(request.read())
+            responses = {}
+            for key, q in payload["queries"].items():
+                mmsi = q["properties"]["mmsi"][0]
+                topics = ["sanction"] if mmsi == "111" else []
+                results = [{"properties": {"topics": topics}}] if topics else []
+                responses[key] = {"status": 200, "results": results}
+            return httpx.Response(200, json={"responses": responses})
+        return _mock_handler(request)
+
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app.state.freight_service = FreightService(fred_api_key="test-key")
+    app.state.sanctions_service = SanctionsService(api_key="test-key")
+
+    with TestClient(app) as client:
+        resp = client.get("/risk/hormuz")
+
+    body = resp.json()
+    assert body["feature_states"]["sanctions"] == "LIVE"
+    assert body["features"]["sanctions"] == pytest.approx(0.5)
+
+
+def test_risk_hormuz_sanctions_inherits_coverage_void_state():
+    app.state.vessel_store = VesselStore()
+    app.state.density_tracker = DensityTracker(min_samples=1)
+    app.state.coverage_monitor = _fresh_coverage_monitor()  # never subscribed -> WARMING_UP
+    app.state.http_client = httpx.AsyncClient(transport=httpx.MockTransport(_mock_handler))
+    app.state.freight_service = FreightService(fred_api_key="test-key")
+    app.state.sanctions_service = SanctionsService(api_key="test-key")  # key present but must not be used
+
+    with TestClient(app) as client:
+        resp = client.get("/risk/hormuz")
+
+    body = resp.json()
+    assert body["feature_states"]["density"] == "WARMING_UP"
+    assert body["feature_states"]["sanctions"] == "WARMING_UP"
+    assert body["features"]["sanctions"] == 0.0
 
 
 def _app_with_mocks() -> None:

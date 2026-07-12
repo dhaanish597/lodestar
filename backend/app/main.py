@@ -6,6 +6,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agents.llm_client import LLMClient
 from app.api.routes import router as risk_router
 from app.api.ws import router as ws_router
 from app.config import get_settings
@@ -15,6 +16,7 @@ from app.ingestion.density import DensityTracker
 from app.ingestion.freight import FreightService
 from app.ingestion.gdelt import gdelt_poller
 from app.ingestion.prices import PriceService
+from app.ingestion.sanctions import SanctionsService
 from app.ingestion.weather import WeatherService
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,10 @@ async def lifespan(app: FastAPI):
         app.state.weather_service = WeatherService()
     if not hasattr(app.state, 'freight_service') or app.state.freight_service is None:
         app.state.freight_service = FreightService(fred_api_key=settings.fred_api_key)
+    if not hasattr(app.state, 'sanctions_service') or app.state.sanctions_service is None:
+        app.state.sanctions_service = SanctionsService(api_key=settings.opensanctions_api_key)
+    if not hasattr(app.state, 'llm_client') or app.state.llm_client is None:
+        app.state.llm_client = LLMClient(api_key=settings.nvidia_api_key, model=settings.llm_model)
 
     ais_client = AISStreamClient(
         api_key=settings.aisstream_api_key,
