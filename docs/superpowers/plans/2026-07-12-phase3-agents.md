@@ -654,7 +654,7 @@ Add `from app.ingestion.sanctions import SanctionsService` to the imports.
 
 `test_risk_hormuz_freight_degrades_to_stub_when_no_key` needs `app.state.sanctions_service = SanctionsService(api_key="")` added to its setup (it's missing entirely today, which will now `AttributeError` since `get_risk` reads it unconditionally) — add that line alongside the existing `app.state.freight_service = FreightService(fred_api_key="")`.
 
-Also add `app.state.sanctions_service = SanctionsService(api_key="")` to every other existing test in this file that calls `client.get("/risk/hormuz")` or `_app_with_mocks()` (i.e. `test_risk_hormuz_returns_full_breakdown`, `test_risk_hormuz_density_state_reflects_coverage`, `test_risk_unknown_corridor_is_404`, `_app_with_mocks`) — otherwise they'll `AttributeError` on the new `request.app.state.sanctions_service` read. Use `SanctionsService(api_key="")` (STUB, deterministic) in all of them except the two new tests below.
+Also add `app.state.sanctions_service = SanctionsService(api_key="")` to every other existing test in this file that calls `client.get("/risk/hormuz")` (i.e. `test_risk_hormuz_returns_full_breakdown`, both calls inside `test_risk_hormuz_density_state_reflects_coverage`) — otherwise they'll `AttributeError` on the new `request.app.state.sanctions_service` read. `test_risk_unknown_corridor_is_404` (hits `/risk/malacca`) and `_app_with_mocks()` (only used by the `/scenario` and `/reroute` tests) do **not** need this — the 404 check in `get_risk` returns before `compute_logistics_reading` is ever called, and `/scenario`/`/reroute` never call `get_risk` at all. Don't add unused mocks to those.
 
 - [ ] **Step 4: Add two new tests proving the sanctions wiring**
 
