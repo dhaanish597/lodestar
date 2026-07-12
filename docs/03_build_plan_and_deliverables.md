@@ -58,7 +58,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Config-driven multi-box AIS subscription (`ais_boxes.json`) + per-box `CoverageMonitor` + `GET /coverage` | You | Tech/Innov | ✅ |
 | Risk feature coverage states (`feature_states`, weight renormalization on `NO_TERRESTRIAL_COVERAGE`/`WARMING_UP`) + UI badge | You | Innov/Tech | ✅ |
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
-| EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4) |
+| EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4; concurrency-safety verified 2026-07-12 — a live 8-concurrent-request test found the TTL cache was **not** race-safe [8 concurrent requests → 8 real Alpha Vantage calls], fixed with `asyncio.Lock` double-checked locking, re-verified live at 1 real call per burst) |
 | Open-Meteo + FRED connectors | Teammate | Scale | ✅ (live — Open-Meteo Marine wave height; FRED WPU301301 substitutes unavailable BCTI/BDI, docs/02 §7) |
 | OpenSanctions vessel screening | You | Innov | ⬜ |
 | Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic/density/weather/freight live; sanctions stubbed — OPENSANCTIONS_API_KEY not configured) |
@@ -76,7 +76,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Corridor risk polygons (color by P) | Teammate | UX | ⬜ |
 | Risk panel w/ stacked feature-contribution bar | You | Innov/UX | ✅ |
 | Scenario sliders + live cascade readout | You | Business/UX | ✅ (live via Tasks 6 and 8 — `ScenarioCard` has 6 live sliders wired to `/scenario/hormuz`, debounced 250ms) |
-| Reroute ranked-list card (executable plan) | You | Business | ✅ (now live via Tasks 7 and 8 — `RerouteCard` fetches `/reroute/hormuz`, MCDM-ranked, debounced 250ms) |
+| Reroute ranked-list card (executable plan) | You | Business | ✅ (now live via Tasks 7 and 8 — `RerouteCard` fetches `/reroute/hormuz`, MCDM-ranked, debounced 250ms; scores/values confirmed live-recomputing on every `disruption_factor` change, verified 2026-07-12 against the real running API — **but** the *position order* of the current 6-grade set does not flip anywhere across the full `disruption_factor` domain [checked 0.0 and 1.0 directly]: cost dominates the MCDM score enough that Urals/Bonny Light/Merey/WTI/Liza/Mars keep a stable relative order, only the score gaps narrow/widen. See docs/04 §C.) |
 | Latency badge (signal→recommendation) | You | Business | ⬜ |
 | Refinery + SPR markers | Teammate | UX | ⬜ |
 

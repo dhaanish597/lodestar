@@ -111,6 +111,8 @@ Score(alt) = w_cost·norm(1/landed_cost)
 
 **`grade_match` matrix is the defensibility centrepiece of the reroute engine** — it's why we beat a generic "cheapest barrel" recommender. A heavy-sour Merey cargo to a simple PSU refinery scores 0.0 even if it's cheapest.
 
+**Live-recompute finding (verified 2026-07-12 against the running API, both slider extremes):** every score recomputes correctly on every `disruption_factor` change (confirmed against real numbers, not mocked). However, for the current 6-grade set at current weights, the *position order* does not flip anywhere across the full `disruption_factor` domain — checked directly at `disruption_factor=0.0` and `disruption_factor=1.0`: the order is Urals, Bonny Light, Merey, WTI, Liza, Mars at both extremes. Cost dominates the additive formula enough that `grade_match`/congestion never overturn the cost-driven ranking for this particular grade set and live Brent price level — the closest pair (Merey vs. WTI) narrows from a 0.0062 gap at `disruption_factor=0.0` to 0.0037 at `disruption_factor=1.0` but never crosses. This doesn't undermine the `grade_match` defensibility story above (Merey's score is honestly lower than it would be with `grade_match=1.0`, which is the actual claim), but it does mean a live demo cannot currently show the ranked list visibly *reordering* by dragging `disruption_factor` alone — only the scores/values changing. Worth a weight-recalibration pass (e.g. raising `w_grade` relative to `w_cost`) if a visible reorder becomes a demo requirement.
+
 ## D. Reference entities (for map markers + reroute targets)
 **Refineries (lat, lon, MMTPA):**
 - RIL Jamnagar 22.34, 69.08 — 68.2 · Nayara Vadinar 22.28, 69.73 — 20
