@@ -171,10 +171,31 @@ same rule as every other LLM touchpoint in this phase.
 
 Agent narration/classification uses NVIDIA NIM's OpenAI-compatible endpoint
 (`https://integrate.api.nvidia.com/v1`, `openai` SDK), model
-`nvidia/llama-3.1-nemotron-70b-instruct` (`NVIDIA_API_KEY`/`LLM_MODEL` in
-`.env`) — a user decision made explicitly for this phase, not the
+`meta/llama-3.1-70b-instruct` (`NVIDIA_API_KEY`/`LLM_MODEL` in `.env`) — a
+user decision made explicitly for this phase, not the
 `ANTHROPIC_API_KEY`/`LLM_MODEL=claude-sonnet-5` hint pre-existing in `.env`
 (that pair was never read by any code; grepped confirmed-empty 2026-07-12).
+
+**Model selection note (2026-07-13):** the original planned default,
+`nvidia/llama-3.1-nemotron-70b-instruct`, returns a fast `404 Not Found —
+"Function ... Not found for account"` for this project's actual NVIDIA
+key — the free-tier key's account doesn't have that model's hosted
+function enabled, despite it being listed generally at `GET /v1/models`.
+Three further candidates were live-tested and rejected: `nvidia/nemotron-
+3-super-120b-a12b` (a reasoning model — burns its entire token budget on
+internal `reasoning_content` before finishing an answer, took 56s+ and
+degenerated into repeated garbage characters at both max_tokens=400 and
+1500), `deepseek-ai/deepseek-v4-flash` (hit NVIDIA's explicit shared-pool
+capacity error, `"ResourceExhausted: Worker local total request limit
+reached (48/48)"`, 2 of 3 attempts), and `nvidia/nemotron-3-nano-30b-a3b`
+(1 of 3 attempts returned entirely hallucinated, off-topic output).
+`meta/llama-3.1-70b-instruct` was clean, fast (~1-1.4s), and consistent
+across every test — **verify catalog access with `GET
+https://integrate.api.nvidia.com/v1/models` (`Authorization: Bearer
+<key>`) before assuming any other model ID works with a given key**, and
+test a realistic narration prompt at the app's real `max_tokens=400`
+before trusting `finish_reason` — a model that never completes cleanly at
+that budget is unusable regardless of what the catalog listing implies.
 
 If `NVIDIA_API_KEY` is unset, every node's narration field returns an
 honest `"STUB — LLM narration unavailable, NVIDIA_API_KEY not configured."`

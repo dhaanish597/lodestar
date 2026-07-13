@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     opensanctions_api_key: str = ""
     fred_api_key: str = ""
     nvidia_api_key: str = ""
-    llm_model: str = "nvidia/llama-3.1-nemotron-70b-instruct"
+    llm_model: str = "meta/llama-3.1-70b-instruct"
 
     @property
     def corridors(self) -> dict[str, Corridor]:

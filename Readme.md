@@ -105,7 +105,7 @@ ALPHAVANTAGE_API_KEY=
 OPENSANCTIONS_API_KEY=
 FRED_API_KEY=
 NVIDIA_API_KEY=
-LLM_MODEL=nvidia/llama-3.1-nemotron-70b-instruct
+LLM_MODEL=meta/llama-3.1-70b-instruct
 AGENT_MODE=graph
 # GDELT and Open-Meteo need no key
 ```
