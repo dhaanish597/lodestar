@@ -60,6 +60,9 @@ async def run_orchestrator_node(
         grades=grades,
     )
 
+    # rank_reroutes() always returns the full configured grade list (currently
+    # 6 entries in crude_grades.json), so indexing [0]/[1] is safe as long as
+    # at least 2 grades are configured.
     top, runner_up = reroutes[0], reroutes[1]
     narration = await llm.narrate(
         ORCHESTRATOR_SYSTEM_PROMPT,

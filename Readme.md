@@ -34,11 +34,10 @@ Live Hormuz AIS  →  corridor risk score (explainable)  →  macro cascade (vis
 
 ## Architecture
 
-Live feeds are consumed by specialized agents (running in parallel), which call **deterministic engines** to do the math. An orchestrator synthesizes the result and FastAPI streams a **typed payload** over WebSocket to a deck.gl + MapLibre frontend.
+Live feeds are consumed by specialized agents — Market Intelligence and Logistics & Maritime run concurrently (a real LangGraph parallel fan-out; neither reads the other's output), then Macroeconomic Strategist and Executive Orchestrator run sequentially after, synthesizing both branches' output — which call **deterministic engines** to do the math. FastAPI streams a **typed payload** over WebSocket to a deck.gl + MapLibre frontend.
 
 ```
-feeds → specialized agents (parallel) → deterministic engines (math)
-      → orchestrator (synthesis + narration, LLM via NVIDIA NIM)
+feeds → Market Intelligence + Logistics & Maritime (parallel) → Macroeconomic Strategist → Executive Orchestrator (synthesis + narration, LLM via NVIDIA NIM)
       → FastAPI + /ws relay (typed payloads)
       → Next.js · deck.gl · MapLibre (vessels · risk polygons · sliders · reroute card · latency badge)
 ```
@@ -55,7 +54,7 @@ The full architecture diagram is in `docs/` and the submission deck.
 | Agent orchestration | LangGraph (Market · Logistics · Macro · Orchestrator) |
 | RAG | Cut Phase 3 — corpus never materialized (docs/04 §G); policy facts kept inline in agent prompts instead |
 | Frontend | Next.js · deck.gl · MapLibre (free tiles, **no Mapbox token**) · Recharts |
-| Packaging | Docker · docker-compose (api · web now; chroma · redis land with Phase 2/3 RAG + caching) |
+| Packaging | Docker · docker-compose (api · web · redis; chroma cut, never landed — docs/04 §G) |
 
 ---
 
@@ -143,8 +142,8 @@ lodestar/
     app/
       main.py            # FastAPI app, /health, mounts /ws
       config.py          # env keys, corridor constants
-      models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption
-      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); weather.py (Open-Meteo Marine, Phase 2); freight.py (FRED, Phase 2); sanctions still to land
+      models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption, AgentRecommendation
+      ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); weather.py (Open-Meteo Marine, Phase 2); freight.py (FRED, Phase 2); sanctions.py (OpenSanctions, Phase 3, live -- wired into GET /risk/{corridor})
       engine/            # risk.py (Phase 1); scenario.py, reroute.py (Phase 2, wired live via /scenario and /reroute)
       agents/            # graph.py (LangGraph, default) + sequential.py (fallback) + market/logistics/macro/orchestrator nodes + llm_client.py (NVIDIA NIM)
       rag/               # cut Phase 3 -- no corpus (docs/04 §G); not present
@@ -159,7 +158,7 @@ lodestar/
     lib/                 # types.ts, ws.ts
     package.json  Dockerfile  .dockerignore
   docs/                  # 01 strategy · 02 data sources · 03 build plan · 04 assumptions
-  docker-compose.yml     # api · web (Phase 1); chroma · redis land with Phase 2/3
+  docker-compose.yml     # api · web (Phase 1); redis landed (Phase 2, caching); chroma cut -- never landed (docs/04 §G)
   README.md
 ```
 

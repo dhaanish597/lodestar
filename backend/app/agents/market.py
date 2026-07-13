@@ -52,7 +52,15 @@ async def run_market_node(
         f"GDELT kinetic-event volume for {corridor}: {x_kinetic:.3f} (0=quiet, 1=peak).\n"
         f"Live Brent price: ${brent_price:.2f}/bbl.",
     )
-    label, spike = _parse_classification(narration) if llm.has_key else ("STUB", False)
+    if narration.startswith("STUB"):
+        # Covers both llm.has_key=False (no key configured) and a keyed call
+        # that errored internally and fell back to a STUB string (see
+        # llm_client.py's error paths) -- neither case is a confident
+        # classification, so don't let _parse_classification's own
+        # "no CLASSIFICATION line found" fallback mislabel it MEDIUM.
+        label, spike = "STUB", False
+    else:
+        label, spike = _parse_classification(narration)
 
     return {
         **state,

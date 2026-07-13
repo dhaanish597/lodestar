@@ -45,8 +45,9 @@ class _FixedDatetime(datetime):
 
 
 NUMERIC_FIELDS = [
-    "x_kinetic", "brent_price_usd_bbl", "x_density", "density_state",
-    "x_sanctions", "sanctions_state", "x_weather", "scenario", "risk", "reroutes",
+    "x_kinetic", "brent_price_usd_bbl", "market_volatility_label", "price_spike_detected",
+    "x_density", "density_state", "x_sanctions", "sanctions_state", "x_weather",
+    "scenario", "risk", "reroutes",
 ]
 
 
