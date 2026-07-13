@@ -65,7 +65,7 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | Scenario cascade engine (5 steps, all sliders) | You | Business | ✅ (engine done Task 2; `GET /scenario/{corridor}` wired live Task 4) |
 | Reroute MCDM (grade_match matrix) | You | Business | ✅ (engine done Task 3; `GET /reroute/{corridor}` wired live Task 4) |
 | LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |
-| Chroma RAG over policy/geopolitics docs | Teammate | Innov | ⬜ |
+| Chroma RAG over policy/geopolitics docs | Teammate | Innov | ✂️ (cut Phase 3 — corpus never materialized, docs/03's own "RAG corpus: 10-20 PPAC/EIA/IEA/ORF" row below is still ⬜/empty on disk; policy facts kept inline in agent system prompts instead, docs/04 §G) |
 
 ## Frontend
 | Task | Owner | Rubric | Status |
@@ -98,5 +98,5 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 2. FRED freight feed → static stub
 3. OpenSanctions live → pre-screened static list
 4. LangGraph → keep agents but run sequential if graph is flaky
-5. Chroma RAG → cut entirely, keep facts inline
+5. Chroma RAG → cut entirely, keep facts inline ✂️ ACTUAL: cut 2026-07-12, see §G
 **Never cut:** live AIS, explainable risk score, adjustable scenario, ranked reroute, latency badge.

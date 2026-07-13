@@ -148,3 +148,21 @@ Grade compatibility (`grade_match`), API gravity/sulfur figures, voyage days, pr
 - **`N_BASELINE_MONTHS = 3`** — `ASSUMPTION`. The series is monthly, not daily, so docs/02 §7's literal "90-day baseline" becomes "the 3 monthly prints preceding the latest one."
 - **`FREIGHT_STRESS_SCALE_PCT = 15.0`** — `ASSUMPTION`. Maps pct deviation of the latest print from the `N_BASELINE_MONTHS` baseline onto the risk engine's `[0,1]` feature convention: a deviation at/beyond this magnitude reads as full freight stress (`X_freight = 1.0`).
 - **`FREIGHT_CACHE_TTL_SECONDS = 3600.0`** — implementation-only. The underlying FRED series is monthly, so an hour of staleness is immaterial; this just bounds how often the risk endpoint's 10s frontend poll triggers a real FRED request.
+
+## G. RAG — cut this phase
+
+Chroma RAG over PPAC/EIA/IEA/ORF policy documents was cut for Phase 3 per
+the build plan's own cut-list (#5). The corpus (10-20 public PDFs/articles)
+never materialized — confirmed empty by directory search across the repo
+on 2026-07-12, no PDFs anywhere. Building a RAG pipeline against zero
+documents would mean either fabricating retrieval results or shipping dead
+code, neither of which serves the "real data over mocks" principle.
+
+Policy/domain facts the agents need are instead written directly into each
+node's system prompt (`backend/app/agents/market.py`, `logistics.py`,
+`macro.py`, `orchestrator.py`) as plain instructions, not retrieved
+context. If a real corpus is supplied later, `rag/store.py` and
+`rag/ingest.py` can be added and the Macro Strategist or Executive
+Orchestrator node (whichever fits the policy citation better) wired to
+query it for narration context only — never a source of numeric output,
+same rule as every other LLM touchpoint in this phase.

@@ -38,7 +38,7 @@ Live feeds are consumed by specialized agents (running in parallel), which call 
 
 ```
 feeds → specialized agents (parallel) → deterministic engines (math)
-      → orchestrator (synthesis + policy citations via RAG)
+      → orchestrator (synthesis + narration, LLM via NVIDIA NIM)
       → FastAPI + /ws relay (typed payloads)
       → Next.js · deck.gl · MapLibre (vessels · risk polygons · sliders · reroute card · latency badge)
 ```
@@ -53,7 +53,7 @@ The full architecture diagram is in `docs/` and the submission deck.
 |---|---|
 | Backend | Python · FastAPI · WebSockets |
 | Agent orchestration | LangGraph (Market · Logistics · Macro · Orchestrator) |
-| RAG | Chroma over public policy/geopolitics documents |
+| RAG | Cut Phase 3 — corpus never materialized (docs/04 §G); policy facts kept inline in agent prompts instead |
 | Frontend | Next.js · deck.gl · MapLibre (free tiles, **no Mapbox token**) · Recharts |
 | Packaging | Docker · docker-compose (api · web now; chroma · redis land with Phase 2/3 RAG + caching) |
 
@@ -143,7 +143,7 @@ lodestar/
       ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); weather.py (Open-Meteo Marine, Phase 2); freight.py (FRED, Phase 2); sanctions still to land
       engine/            # risk.py (Phase 1); scenario.py, reroute.py (Phase 2, wired live via /scenario and /reroute)
       agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
-      rag/               # Phase 3: store.py, ingest.py (not yet present)
+      rag/               # cut Phase 3 -- no corpus (docs/04 §G); not present
       api/               # routes.py, ws.py
     data/                # corridors.json, ais_boxes.json (AIS multi-box subscription config); crude_grades.json (Phase 2, Task 3); refineries.json, spr.json still pending (teammate-owned)
     tests/               # conftest.py + test_*.py (health, models, aisstream, coverage, dead_reckoning, density, gdelt, risk, routes, ws_vessels)
