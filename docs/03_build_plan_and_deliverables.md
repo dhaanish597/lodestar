@@ -60,11 +60,11 @@ voids — H2 confirmed. Coverage is Europe/US/SE-Asia-skewed (A samples: USA, Ne
 | GDELT connector (TimelineVol, corridor bbox) + TTL cache (120s) + 429/Retry-After handling | You | Innov/Tech | ✅ |
 | EIA + Alpha Vantage (cached) price connectors | You/teammate | Tech | ✅ (`PriceService` live via `/scenario`, `/reroute` — Task 4; concurrency-safety verified 2026-07-12 — a live 8-concurrent-request test found the TTL cache was **not** race-safe [8 concurrent requests → 8 real Alpha Vantage calls], fixed with `asyncio.Lock` double-checked locking, re-verified live at 1 real call per burst) |
 | Open-Meteo + FRED connectors | Teammate | Scale | ✅ (live — Open-Meteo Marine wave height; FRED WPU301301 substitutes unavailable BCTI/BDI, docs/02 §7; concurrency-safety fixed 2026-07-12 — both `WeatherCache` and `FreightCache` had the same check-then-fetch-then-set race found in `PriceService`'s caches, closed with the identical `asyncio.Lock` double-checked-locking pattern, docs/02 §6–7) |
-| OpenSanctions vessel screening | You | Innov | ⬜ |
-| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | 🟨 (kinetic/density/weather/freight live; sanctions stubbed — OPENSANCTIONS_API_KEY not configured) |
+| OpenSanctions vessel screening | You | Innov | ✅ (live — SanctionsService screens observed AIS fleet by MMSI, backend/app/ingestion/sanctions.py; wired into both GET /risk/{corridor} and the Logistics agent node so risk score and narration agree; inherits AIS coverage-void state when there's no fleet to screen) |
+| Risk engine (sigmoid + weighted features + per-feature breakdown) | You | Innov/Tech | ✅ (all five features live: kinetic/density/weather/freight/sanctions; sanctions state-aware — LIVE when AIS-covered and keyed, STUB when unkeyed, inherits WARMING_UP/NO_TERRESTRIAL_COVERAGE when there's no observed fleet) |
 | Scenario cascade engine (5 steps, all sliders) | You | Business | ✅ (engine done Task 2; `GET /scenario/{corridor}` wired live Task 4) |
 | Reroute MCDM (grade_match matrix) | You | Business | ✅ (engine done Task 3; `GET /reroute/{corridor}` wired live Task 4) |
-| LangGraph orchestration (4 agents) | You | Tech/Innov | ⬜ |
+| LangGraph orchestration (4 agents) | You | Tech/Innov | ✅ (Market Intelligence, Logistics & Maritime, Macroeconomic Strategist, Executive Orchestrator; AGENT_MODE=graph default, =sequential fallback calling the identical node functions; GET /recommendation/{corridor}) |
 | Chroma RAG over policy/geopolitics docs | Teammate | Innov | ✂️ (cut Phase 3 — corpus never materialized, docs/03's own "RAG corpus: 10-20 PPAC/EIA/IEA/ORF" row below is still ⬜/empty on disk; policy facts kept inline in agent system prompts instead, docs/04 §G) |
 
 ## Frontend

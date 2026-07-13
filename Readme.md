@@ -90,7 +90,7 @@ All constants, weights, and assumptions live in `docs/04_model_assumptions_and_c
 ### Prerequisites
 
 - Docker + Docker Compose
-- An AISStream API key (free-tier) — this is the only key Phase 1 actually calls. GDELT needs no key. EIA and Alpha Vantage are now wired backend-side (`PriceService`, live via `GET /scenario/{corridor}` and `GET /reroute/{corridor}`) but optional — the app runs fully without them, falling back to a static Brent baseline (`BRENT_FALLBACK_USD_BBL`). OpenSanctions and FRED keys are accepted in `.env` but their connectors are still Phase 2 work not yet wired; the app runs fully without them (those risk features are `STUB → 0.0`).
+- An AISStream API key (free-tier) — this is the only key Phase 1 actually calls. GDELT needs no key. EIA and Alpha Vantage are now wired backend-side (`PriceService`, live via `GET /scenario/{corridor}` and `GET /reroute/{corridor}`) but optional — the app runs fully without them, falling back to a static Brent baseline (`BRENT_FALLBACK_USD_BBL`). OpenSanctions is now wired live (Phase 3, vessel screening in risk + Logistics agent node); FRED key is optional. NVIDIA_API_KEY enables agent narration via NVIDIA NIM (Phase 3, `GET /recommendation/{corridor}`); narration stubs if unset.
 
 ### 1. Configure environment
 
@@ -105,6 +105,9 @@ EIA_API_KEY=
 ALPHAVANTAGE_API_KEY=
 OPENSANCTIONS_API_KEY=
 FRED_API_KEY=
+NVIDIA_API_KEY=
+LLM_MODEL=nvidia/llama-3.1-nemotron-70b-instruct
+AGENT_MODE=graph
 # GDELT and Open-Meteo need no key
 ```
 
@@ -126,6 +129,7 @@ docker compose up --build
 | AIS coverage state | http://localhost:8000/coverage |
 | Scenario cascade | http://localhost:8000/scenario/hormuz |
 | Reroute ranking | http://localhost:8000/reroute/hormuz |
+| Agent recommendation | http://localhost:8000/recommendation/hormuz |
 
 Open **http://localhost:3000**: the map opens on the Strait of Hormuz with a live corridor risk percentage. **AISStream has no terrestrial receivers in the Persian Gulf or on the India west coast** (empirically verified — see "AIS coverage reality" in `docs/03`), so the Hormuz frame shows no vessel dots and the risk panel's density feature honestly badges "AIS: no terrestrial coverage in corridor". Pan/zoom the map southeast to the **Singapore Strait** (the live subscribed box inside the Malacca corridor) to see real vessels streaming. `GET /coverage` shows the per-box coverage state.
 
@@ -142,7 +146,7 @@ lodestar/
       models.py          # Pydantic: Vessel, RiskScore, Scenario, RerouteOption
       ingestion/         # aisstream.py, dead_reckoning.py, density.py, gdelt.py (Phase 1); prices.py (EIA + Alpha Vantage, Phase 2); weather.py (Open-Meteo Marine, Phase 2); freight.py (FRED, Phase 2); sanctions still to land
       engine/            # risk.py (Phase 1); scenario.py, reroute.py (Phase 2, wired live via /scenario and /reroute)
-      agents/            # Phase 3: graph.py + market/logistics/macro/orchestrator (not yet present)
+      agents/            # graph.py (LangGraph, default) + sequential.py (fallback) + market/logistics/macro/orchestrator nodes + llm_client.py (NVIDIA NIM)
       rag/               # cut Phase 3 -- no corpus (docs/04 §G); not present
       api/               # routes.py, ws.py
     data/                # corridors.json, ais_boxes.json (AIS multi-box subscription config); crude_grades.json (Phase 2, Task 3); refineries.json, spr.json still pending (teammate-owned)

@@ -22,7 +22,7 @@ P(c,t) = sigmoid( β0 + Σ wi · Xi )
 | `X_freight` (FRED WPU301301) | **0.10** | Systemic tonnage-stress proxy. |
 
 - **Explainability requirement:** the UI must show the per-feature contribution `wi·Xi` as a stacked bar, not just the final %. This is the single biggest "is it real" credibility win.
-- **Phase 1 implementation status:** `X_kinetic`, `X_density`, `X_weather`, `X_freight` are live; `X_sanctions` remains `STUB → 0.0` — `OPENSANCTIONS_API_KEY` is not configured (Phase 2). See `backend/app/engine/risk.py`.
+- **Phase 1–3 implementation status:** `X_kinetic`, `X_density`, `X_weather`, `X_freight` live (Phase 1–2); `X_sanctions` is now live-wired (Phase 3) — state-aware (LIVE when AIS-covered and keyed, STUB when unkeyed), inherits WARMING_UP/NO_TERRESTRIAL_COVERAGE. See `backend/app/engine/risk.py`, `backend/app/ingestion/sanctions.py`, and §H for agent/LLM wiring.
 - **`X_density` substitution:** Phase 1 computes `X_density` from a short in-memory rolling window (`DensityTracker`, `backend/app/ingestion/density.py`) rather than the 30-day MA baseline documented in `docs/02_data_sources_and_schemas.md` §10 — a live demo can't accumulate 30 days of history. `ASSUMPTION`, revisit if a persistent store is added.
 - **Feature coverage states + weight renormalization:** every feature now carries a provenance state (`LIVE` / `STUB` / `WARMING_UP` / `NO_TERRESTRIAL_COVERAGE`), returned in `RiskScore.feature_states`. Features in `WARMING_UP` or `NO_TERRESTRIAL_COVERAGE` are **excluded from the risk sum and the remaining weights renormalized to sum to 1.0** (`backend/app/engine/risk.py`) — a sensor with no coverage must never read as a genuine 0 ("all clear"). `STUB` features keep the original semantics (value pinned to 0, weight retained) so the resting probability stays anchored at `sigmoid(β0) ≈ 4.74%`.
 - **`COVERAGE_WINDOW_SECONDS = 600`** (`backend/app/ingestion/coverage.py`): a subscribed AIS box that receives zero frames for a full 10-minute rolling window is declared `NO_TERRESTRIAL_COVERAGE`. `ASSUMPTION`, empirically calibrated 2026-07-05: every covered box in the diagnostic matrix (docs/03 "AIS coverage reality") produced its first frame in <1s; Hormuz and the entire Gulf produced zero frames in 2–5+ minutes across repeated runs, so 10 silent minutes is a conservative void signal.
@@ -166,3 +166,19 @@ context. If a real corpus is supplied later, `rag/store.py` and
 Orchestrator node (whichever fits the policy citation better) wired to
 query it for narration context only — never a source of numeric output,
 same rule as every other LLM touchpoint in this phase.
+
+## H. LLM wiring (Phase 3)
+
+Agent narration/classification uses NVIDIA NIM's OpenAI-compatible endpoint
+(`https://integrate.api.nvidia.com/v1`, `openai` SDK), model
+`nvidia/llama-3.1-nemotron-70b-instruct` (`NVIDIA_API_KEY`/`LLM_MODEL` in
+`.env`) — a user decision made explicitly for this phase, not the
+`ANTHROPIC_API_KEY`/`LLM_MODEL=claude-sonnet-5` hint pre-existing in `.env`
+(that pair was never read by any code; grepped confirmed-empty 2026-07-12).
+
+If `NVIDIA_API_KEY` is unset, every node's narration field returns an
+honest `"STUB — LLM narration unavailable, NVIDIA_API_KEY not configured."`
+string (`backend/app/agents/llm_client.py`) instead of fabricating text —
+same pattern as the OpenSanctions stub. The LLM never computes or replaces
+a number; every `x_*`/`risk`/`scenario`/`reroutes` field in `AgentState` is
+a direct engine/connector passthrough (`backend/app/agents/state.py`).
